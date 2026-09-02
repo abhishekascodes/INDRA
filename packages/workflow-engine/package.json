@@ -1,0 +1,22 @@
+{
+  "name": "@indra/workflow-engine",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "dependencies": {
+    "@indra/contracts": "workspace:*",
+    "@indra/database": "workspace:*",
+    "@indra/capability-engine": "workspace:*",
+    "@indra/event-bus": "workspace:*",
+    "drizzle-orm": "^0.39.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3"
+  }
+}
