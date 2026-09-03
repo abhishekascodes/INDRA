@@ -1,5 +1,8 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import fastifyStatic from '@fastify/static';
+import path from 'node:path';
+import fs from 'node:fs';
 import { getDb, schema, seedDatabase, PRIYA_SHARMA_ID } from '@indra/database';
 import { eq, desc } from 'drizzle-orm';
 import { CapabilityRegistry, registerDefaultCapabilities } from '@indra/capability-engine';
@@ -80,6 +83,7 @@ export async function buildApp() {
 
     return {
       profile: citizen,
+      citizen,
       credentials: credentials.map((c) => ({
         type: c.type,
         identifierMasked: c.identifierMasked,
@@ -124,15 +128,55 @@ export async function buildApp() {
     return { documents: docs };
   });
 
-  // 5. Intent Understanding Endpoint
+  // 5. Intent Understanding Endpoint (Async Dual-Path with LLM Fallback)
   server.post<{ Body: { query: string } }>('/api/intent/resolve', async (request, reply) => {
     const { query } = request.body || {};
     if (!query) {
       return reply.status(400).send({ error: 'Query is required' });
     }
 
-    const resolved = intentEngine.resolve(query);
+    const resolved = await intentEngine.resolveAsync(query);
     return resolved;
+  });
+
+  // 5b. Citizen Applications Tracker
+  server.get('/api/applications', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const db = await getDb();
+    const apps = await db
+      .select()
+      .from(schema.applications)
+      .where(eq(schema.applications.citizenId, authCitizenId))
+      .orderBy(desc(schema.applications.submittedAt));
+
+    return { applications: apps };
+  });
+
+  // 5c. Trust & Privacy: Audit Logs
+  server.get('/api/trust/audit-logs', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const db = await getDb();
+    const logs = await db
+      .select()
+      .from(schema.auditLogs)
+      .where(eq(schema.auditLogs.citizenId, authCitizenId))
+      .orderBy(desc(schema.auditLogs.createdAt))
+      .limit(25);
+
+    return { logs };
+  });
+
+  // 5d. Trust & Privacy: Consents
+  server.get('/api/trust/consents', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const db = await getDb();
+    const userConsents = await db
+      .select()
+      .from(schema.consents)
+      .where(eq(schema.consents.citizenId, authCitizenId))
+      .orderBy(desc(schema.consents.grantedAt));
+
+    return { consents: userConsents };
   });
 
   // 6. Start Workflow (Enforcing citizen scoping)
@@ -227,6 +271,26 @@ export async function buildApp() {
       unsubscribe();
     });
   });
+
+  // 10. Serve built frontend web app if available
+  let curr = process.cwd();
+  let webDistPath = path.resolve(curr, 'apps', 'web', 'dist');
+  if (!fs.existsSync(webDistPath)) {
+    webDistPath = path.resolve(curr, '..', 'web', 'dist');
+  }
+  if (fs.existsSync(webDistPath)) {
+    await server.register(fastifyStatic, {
+      root: webDistPath,
+      prefix: '/',
+      wildcard: false,
+    });
+    server.get('/*', async (request, reply) => {
+      if (request.raw.url && request.raw.url.startsWith('/api')) {
+        return reply.status(404).send({ error: 'Endpoint not found' });
+      }
+      return reply.sendFile('index.html');
+    });
+  }
 
   return server;
 }
