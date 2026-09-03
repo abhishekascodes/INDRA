@@ -5,46 +5,98 @@ import type {
 
 const API_BASE = '/api';
 
+let activeCitizenId: string | null = localStorage.getItem('indra_active_citizen_id');
+
+export function setActiveCitizenId(id: string) {
+  activeCitizenId = id;
+  localStorage.setItem('indra_active_citizen_id', id);
+}
+
+export function getActiveCitizenId(): string | null {
+  return activeCitizenId;
+}
+
+function getHeaders(customHeaders: Record<string, string> = {}): Record<string, string> {
+  const headers: Record<string, string> = { ...customHeaders };
+  if (activeCitizenId) {
+    headers['x-citizen-id'] = activeCitizenId;
+  }
+  return headers;
+}
+
+export async function fetchSyntheticCitizensList() {
+  const res = await fetch(`${API_BASE}/citizens/synthetic-list`, {
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to load synthetic citizens list');
+  return res.json();
+}
+
 export async function fetchCitizenProfile() {
-  const res = await fetch(`${API_BASE}/citizen/me`);
+  const res = await fetch(`${API_BASE}/citizen/me`, {
+    headers: getHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to load citizen profile');
   return res.json();
 }
 
 export async function fetchInbox() {
-  const res = await fetch(`${API_BASE}/citizen/inbox`);
+  const res = await fetch(`${API_BASE}/citizen/inbox`, {
+    headers: getHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to load inbox items');
   return res.json();
 }
 
 export async function fetchVault() {
-  const res = await fetch(`${API_BASE}/citizen/vault`);
+  const res = await fetch(`${API_BASE}/citizen/vault`, {
+    headers: getHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to load vault documents');
   return res.json();
 }
 
 export async function fetchApplications() {
-  const res = await fetch(`${API_BASE}/applications`);
+  const res = await fetch(`${API_BASE}/applications`, {
+    headers: getHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to load applications');
   return res.json();
 }
 
 export async function fetchAuditLogs() {
-  const res = await fetch(`${API_BASE}/trust/audit-logs`);
+  const res = await fetch(`${API_BASE}/trust/audit-logs`, {
+    headers: getHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to load audit logs');
   return res.json();
 }
 
 export async function fetchConsents() {
-  const res = await fetch(`${API_BASE}/trust/consents`);
+  const res = await fetch(`${API_BASE}/trust/consents`, {
+    headers: getHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to load consents');
+  return res.json();
+}
+
+export async function fetchRelocationImpact(
+  destinationCity = 'Bengaluru',
+  destinationState = 'Karnataka'
+) {
+  const res = await fetch(`${API_BASE}/citizen/life-events/relocation-impact`, {
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ destinationCity, destinationState }),
+  });
+  if (!res.ok) throw new Error('Failed to synthesize relocation impact');
   return res.json();
 }
 
 export async function resolveIntent(query: string): Promise<StructuredIntent> {
   const res = await fetch(`${API_BASE}/intent/resolve`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ query }),
   });
   if (!res.ok) throw new Error('Failed to resolve intent');
@@ -57,8 +109,8 @@ export async function startWorkflow(
 ): Promise<WorkflowRunSummary> {
   const res = await fetch(`${API_BASE}/workflows/start`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workflowCode, initialContext }),
+    headers: getHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ workflowCode, citizenId: activeCitizenId || undefined, initialContext }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -74,7 +126,7 @@ export async function resumeWorkflow(
 ): Promise<WorkflowRunSummary> {
   const res = await fetch(`${API_BASE}/workflows/${runId}/resume`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ input, authorize }),
   });
   if (!res.ok) {

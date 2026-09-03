@@ -6,6 +6,8 @@ import type {
   ExecutionContext,
 } from '@indra/contracts';
 
+export * from './life-events.js';
+
 export class ConsentManager {
   async recordConsent(params: {
     citizenId: string;

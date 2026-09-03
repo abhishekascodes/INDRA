@@ -9,12 +9,7 @@ import { CapabilityRegistry, registerDefaultCapabilities } from '@indra/capabili
 import { WorkflowRegistry, WorkflowRunner, registerDefaultWorkflows } from '@indra/workflow-engine';
 import { IntentEngine } from '@indra/intent-engine';
 import { EventBus } from '@indra/event-bus';
-
-const server = Fastify({
-  logger: {
-    level: process.env.LOG_LEVEL || 'info',
-  },
-});
+import { synthesizeRelocationImpact } from '@indra/policy-engine';
 
 const intentEngine = new IntentEngine();
 const workflowRunner = new WorkflowRunner();
@@ -26,6 +21,12 @@ export function getAuthenticatedCitizenId(request: any): string {
 }
 
 export async function buildApp() {
+  const server = Fastify({
+    logger: {
+      level: process.env.LOG_LEVEL || 'info',
+    },
+  });
+
   await server.register(cors, {
     origin: true, // Allow frontend during development
     credentials: true,
@@ -44,6 +45,8 @@ export async function buildApp() {
     return {
       status: 'healthy',
       system: 'INDRA Universal Public Operating Layer',
+      environment: 'synthetic-public-service-demonstration',
+      disclaimer: 'This is an isolated synthetic evaluation environment. Not connected to live production government infrastructure.',
       database: 'connected (PostgreSQL-compatible PGlite)',
       registeredCapabilitiesCount: capList.length,
       registeredWorkflowsCount: wfList.length,
@@ -179,6 +182,40 @@ export async function buildApp() {
     return { consents: userConsents };
   });
 
+  // 5e. Life-Event: Dynamic Relocation Impact Synthesis
+  server.post<{
+    Body: { destinationCity?: string; destinationState?: string };
+  }>('/api/citizen/life-events/relocation-impact', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { destinationCity, destinationState } = request.body || {};
+
+    try {
+      const impact = await synthesizeRelocationImpact(
+        authCitizenId,
+        destinationCity || 'Bengaluru',
+        destinationState || 'Karnataka'
+      );
+      return impact;
+    } catch (err: any) {
+      request.log.error(err);
+      return reply.status(500).send({ error: err.message || 'Failed to synthesize relocation impact' });
+    }
+  });
+
+  // 5f. List available synthetic citizens for demonstration inspection
+  server.get('/api/citizens/synthetic-list', async () => {
+    const db = await getDb();
+    const allCitizens = await db.select().from(schema.citizens);
+    return {
+      citizens: allCitizens.map((c) => ({
+        id: c.id,
+        primaryName: c.primaryName,
+        currentCity: c.currentCity,
+        currentState: c.currentState,
+      })),
+    };
+  });
+
   // 6. Start Workflow (Enforcing citizen scoping)
   server.post<{
     Body: { workflowCode: string; citizenId?: string; initialContext?: Record<string, unknown> };
@@ -239,6 +276,12 @@ export async function buildApp() {
     const authCitizenId = getAuthenticatedCitizenId(request);
     if (existing.citizenId !== authCitizenId) {
       return reply.status(403).send({ error: 'Forbidden: Cannot resume another citizen\'s workflow' });
+    }
+
+    if (existing.state === 'COMPLETED' || existing.state === 'FAILED') {
+      return reply.status(409).send({
+        error: `Conflict: Workflow run '${id}' is already in terminal state '${existing.state}'`,
+      });
     }
 
     try {

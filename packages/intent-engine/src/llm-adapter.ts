@@ -134,7 +134,23 @@ You MUST output ONLY valid JSON conforming to this schema:
       };
     }
 
-    // 2. EPFO / Provident Fund Cluster
+    // 2a. Active Job Change PF Transfer
+    if (
+      (query.includes('pf') || query.includes('epf')) &&
+      (query.includes('new employer') || query.includes('new company') || query.includes('new job') || query.includes('form 13') || query.includes('switch'))
+    ) {
+      return {
+        intentId: 'TRANSFER_ACTIVE_PF',
+        domain: 'EMPLOYMENT',
+        suggestedWorkflowCode: 'RECOVER_DORMANT_PF',
+        extractedEntities: {},
+        confidence: 0.94,
+        reasoningSummary: 'Citizen requested transfer of PF balance from previous employment to active new job.',
+        clarificationRequired: false,
+      };
+    }
+
+    // 2b. EPFO / Dormant or Inactive Provident Fund Recovery Cluster
     if (
       query.includes('pf') ||
       query.includes('provident') ||
@@ -151,7 +167,7 @@ You MUST output ONLY valid JSON conforming to this schema:
         suggestedWorkflowCode: 'RECOVER_DORMANT_PF',
         extractedEntities: {},
         confidence: 0.93,
-        reasoningSummary: 'Citizen inquired about checking, transferring, or consolidating provident fund balances.',
+        reasoningSummary: 'Citizen inquired about identifying, recovering, or consolidating dormant or unlinked provident fund accounts.',
         clarificationRequired: false,
       };
     }
@@ -253,6 +269,19 @@ You MUST output ONLY valid JSON conforming to this schema:
         extractedEntities: targetCity ? { targetCity } : {},
         confidence: 0.90,
         reasoningSummary: 'Citizen reported geographic relocation requiring multi-registry address synchronization.',
+        clarificationRequired: false,
+      };
+    }
+
+    // 8. Post-Marriage Life Event Cluster
+    if (query.includes('marri') || query.includes('wedding') || query.includes('got married')) {
+      return {
+        intentId: 'LIFE_EVENT_MARRIAGE',
+        domain: 'LIFE_EVENT',
+        suggestedWorkflowCode: undefined,
+        extractedEntities: {},
+        confidence: 0.92,
+        reasoningSummary: 'Citizen reported marriage event requiring multi-registry status and surname harmonization.',
         clarificationRequired: false,
       };
     }

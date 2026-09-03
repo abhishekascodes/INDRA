@@ -13,6 +13,8 @@ import {
   ClockIcon,
 } from '../icons.js';
 
+import { fetchRelocationImpact } from '../../api.js';
+
 interface PersonalGovernmentHomeProps {
   citizen: any;
   applications: any[];
@@ -28,11 +30,22 @@ export function PersonalGovernmentHome({
 }: PersonalGovernmentHomeProps) {
   // State for rich multi-aspect transition preview (e.g., "I moved to Bengaluru")
   const [transitionIntent, setTransitionIntent] = useState<StructuredIntent | null>(null);
+  const [relocationImpact, setRelocationImpact] = useState<any | null>(null);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
 
-  const handleExecuteIntent = (intent: StructuredIntent) => {
+  const handleExecuteIntent = async (intent: StructuredIntent) => {
     if (intent.intentId === 'LIFE_EVENT_MOVING') {
-      // Show rich multi-registry synthesis on the home canvas
       setTransitionIntent(intent);
+      setIsSynthesizing(true);
+      try {
+        const destCity = (intent.extractedEntities?.targetCity as string) || 'Bengaluru';
+        const impact = await fetchRelocationImpact(destCity, 'Karnataka');
+        setRelocationImpact(impact);
+      } catch (err) {
+        console.error('Failed to synthesize relocation impact:', err);
+      } finally {
+        setIsSynthesizing(false);
+      }
     } else if (intent.matchedWorkflowCode) {
       onLaunchWorkflow(intent.matchedWorkflowCode, intent.extractedEntities);
     } else {
@@ -76,51 +89,56 @@ export function PersonalGovernmentHome({
           <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0]">
             <div>
               <span className="text-[10px] font-bold tracking-wider uppercase text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                LIFE EVENT · MULTI-REGISTRY HARMONIZATION
+                LIFE EVENT · MULTI-REGISTRY SYNTHESIS
               </span>
               <h2 className="text-xl font-bold text-[#0F172A] mt-1">I can help with that.</h2>
               <p className="text-xs text-[#64748B]">
-                INDRA identified 4 public registrations that may need synchronization for your relocation:
+                {relocationImpact
+                  ? `INDRA identified ${relocationImpact.registrations.length} public registrations requiring synchronization for your move from ${relocationImpact.originCity} to ${relocationImpact.destinationCity}:`
+                  : 'Analyzing your verified credentials and documents for cross-ministry relocation requirements...'}
               </p>
             </div>
             <button
-              onClick={() => setTransitionIntent(null)}
+              onClick={() => {
+                setTransitionIntent(null);
+                setRelocationImpact(null);
+              }}
               className="text-xs text-[#64748B] hover:text-[#0F172A] font-semibold px-2 py-1 rounded border border-[#E2E8F0]"
             >
               Dismiss ✕
             </button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-              <div className="font-bold text-[#0F172A]">Address Record</div>
-              <div className="text-[11px] text-[#64748B] mt-0.5">UIDAI & Aadhaar</div>
+          {isSynthesizing ? (
+            <div className="p-8 text-center text-xs text-[#64748B]">
+              <div className="inline-block animate-spin w-5 h-5 border-2 border-[#0F172A] border-t-transparent rounded-full mb-2"></div>
+              <div>Synthesizing cross-ministry impact from verified ground truth...</div>
             </div>
-            <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-              <div className="font-bold text-[#0F172A]">Driving Licence</div>
-              <div className="text-[11px] text-[#64748B] mt-0.5">KA-01 Transport Dept</div>
-            </div>
-            <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-              <div className="font-bold text-[#0F172A]">Vehicle RC</div>
-              <div className="text-[11px] text-[#64748B] mt-0.5">Vahan RTO Transfer</div>
-            </div>
-            <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-              <div className="font-bold text-[#0F172A]">Voter Registration</div>
-              <div className="text-[11px] text-[#64748B] mt-0.5">Election Commission Form 8</div>
-            </div>
-          </div>
+          ) : relocationImpact ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                {relocationImpact.registrations.map((reg: any) => (
+                  <div key={reg.id} className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1">
+                    <div className="font-bold text-[#0F172A]">{reg.title}</div>
+                    <div className="text-[11px] text-indigo-700 font-semibold">{reg.authority}</div>
+                    <div className="text-[11px] text-[#64748B] leading-relaxed pt-1">{reg.actionRequired}</div>
+                  </div>
+                ))}
+              </div>
 
-          <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#334155] space-y-1">
-            <div className="font-semibold text-[#0F172A]">Already Verified from Government Ground Truth:</div>
-            <div className="flex items-center space-x-2 text-emerald-800">
-              <CheckIcon className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Identity: Priya Sharma (Aadhaar XXXX-XXXX-9012)</span>
-            </div>
-            <div className="flex items-center space-x-2 text-emerald-800">
-              <CheckIcon className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Current City: Bengaluru, Karnataka (PIN 560038)</span>
-            </div>
-          </div>
+              <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#334155] space-y-1.5">
+                <div className="font-semibold text-[#0F172A]">Verified from Government Ground Truth:</div>
+                {relocationImpact.verifiedGroundTruth.map((fact: any, idx: number) => (
+                  <div key={idx} className="flex items-center space-x-2 text-emerald-800">
+                    <CheckIcon className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>
+                      <strong className="font-semibold text-[#0F172A]">{fact.label}:</strong> {fact.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
 
           <div className="pt-2 flex justify-end">
             <button

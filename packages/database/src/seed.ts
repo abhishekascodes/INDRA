@@ -3,41 +3,41 @@ import * as schema from './schema.js';
 import { eq } from 'drizzle-orm';
 
 export const PRIYA_SHARMA_ID = 'e8b0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3';
+export const AARAV_PATEL_ID = 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e';
 export const DORMANT_EPFO_ID = 'f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c';
 export const ACTIVE_EPFO_ID = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';
 
 export async function resetDatabase(db: any = null) {
   const database = db || (await getDb());
   await database.delete(schema.citizens).where(eq(schema.citizens.id, PRIYA_SHARMA_ID));
+  await database.delete(schema.citizens).where(eq(schema.citizens.id, AARAV_PATEL_ID));
   return seedDatabase(database);
 }
 
 export async function seedDatabase(db: any = null) {
   const database = db || (await getDb());
 
-  // Check if Priya Sharma already exists
-  const existing = await database
+  // Check if both Priya Sharma and Aarav Patel exist
+  const existingPriya = await database
     .select()
     .from(schema.citizens)
     .where(eq(schema.citizens.id, PRIYA_SHARMA_ID));
 
-  if (existing.length > 0) {
-    const creds = await database
-      .select()
-      .from(schema.citizenCredentials)
-      .where(eq(schema.citizenCredentials.citizenId, PRIYA_SHARMA_ID));
-    if (creds.length >= 5) {
-      console.log('[Seed] Database already fully seeded with Priya Sharma.');
-      return { citizenId: PRIYA_SHARMA_ID };
-    }
-    console.log('[Seed] Detected partial seed, cleaning up to re-seed...');
-    await database.delete(schema.citizens).where(eq(schema.citizens.id, PRIYA_SHARMA_ID));
+  const existingAarav = await database
+    .select()
+    .from(schema.citizens)
+    .where(eq(schema.citizens.id, AARAV_PATEL_ID));
+
+  if (existingPriya.length > 0 && existingAarav.length > 0) {
+    console.log('[Seed] Database already fully seeded with synthetic citizens.');
+    return { citizenId: PRIYA_SHARMA_ID, secondaryCitizenId: AARAV_PATEL_ID };
   }
 
-  console.log('[Seed] Seeding synthetic citizen graph: Priya Sharma...');
+  if (existingPriya.length === 0) {
+    console.log('[Seed] Seeding synthetic citizen graph: Priya Sharma...');
 
-  // 1. Citizen Profile
-  await database.insert(schema.citizens).values({
+    // 1. Citizen Profile
+    await database.insert(schema.citizens).values({
     id: PRIYA_SHARMA_ID,
     primaryName: 'Priya Sharma',
     dateOfBirth: '1994-08-15',
@@ -291,10 +291,157 @@ export async function seedDatabase(db: any = null) {
       isRead: false,
       isResolved: false,
     },
+    ]);
+  }
+
+  // 10. Seed Second Synthetic Citizen: Aarav Patel (Pune, Maharashtra)
+  if (existingAarav.length === 0) {
+    console.log('[Seed] Seeding synthetic citizen graph: Aarav Patel...');
+    await database.insert(schema.citizens).values({
+    id: AARAV_PATEL_ID,
+    primaryName: 'Aarav Patel',
+    dateOfBirth: '1991-03-22',
+    gender: 'Male',
+    primaryMobile: '+91 91234 56789',
+    primaryEmail: 'aarav.patel@example.in',
+    currentCity: 'Pune',
+    currentState: 'Maharashtra',
+  });
+
+  await database.insert(schema.citizenCredentials).values([
+    {
+      citizenId: AARAV_PATEL_ID,
+      type: 'AADHAAR',
+      identifierMasked: 'XXXX-XXXX-4567',
+      identifierHash: 'hash_aadhaar_aarav_4567',
+      issuedDate: '2011-08-20',
+      status: 'ACTIVE',
+      metadata: { holderName: 'Aarav Patel', gender: 'Male', yob: '1991' },
+    },
+    {
+      citizenId: AARAV_PATEL_ID,
+      type: 'PAN',
+      identifierMasked: 'BCDEF****K',
+      identifierHash: 'hash_pan_aarav_5678k',
+      issuedDate: '2013-11-14',
+      status: 'ACTIVE',
+      metadata: { holderName: 'Aarav Patel', fathersName: 'Dinesh Patel' },
+    },
+    {
+      citizenId: AARAV_PATEL_ID,
+      type: 'DRIVING_LICENCE',
+      identifierMasked: 'MH-12-2016-******',
+      identifierHash: 'hash_dl_aarav_mh12',
+      issuedDate: '2016-06-18',
+      expiryDate: '2036-06-17',
+      status: 'ACTIVE',
+      metadata: { holderName: 'Aarav Patel', class: 'LMV', rto: 'MH-12 Pune' },
+    },
+    {
+      citizenId: AARAV_PATEL_ID,
+      type: 'UAN',
+      identifierMasked: '1019****8821',
+      identifierHash: 'hash_uan_aarav_8821',
+      issuedDate: '2018-09-01',
+      status: 'ACTIVE',
+      metadata: { uanNumber: '101988219012' },
+    },
   ]);
 
+  await database.insert(schema.citizenAddresses).values([
+    {
+      citizenId: AARAV_PATEL_ID,
+      type: 'CURRENT',
+      line1: 'Flat 402, Kothrud Heights',
+      line2: 'Paud Road, Kothrud',
+      city: 'Pune',
+      district: 'Pune',
+      state: 'Maharashtra',
+      pincode: '411038',
+      isVerified: true,
+      validSince: '2020-04-01',
+    },
+  ]);
+
+  await database.insert(schema.spiEpfoAccounts).values([
+    {
+      citizenId: AARAV_PATEL_ID,
+      uan: '101988219012',
+      memberId: 'MHPUN0098210000001824',
+      establishmentName: 'TechCorp India Pune Pvt Ltd',
+      establishmentId: 'MHPUN0098210',
+      joiningDate: '2021-04-01',
+      status: 'ACTIVE',
+      pfBalance: 85000,
+      pensionBalance: 24000,
+    },
+  ]);
+
+  await database.insert(schema.spiTelecomRecords).values([
+    {
+      citizenId: AARAV_PATEL_ID,
+      mobileNumber: '+91 91234 56789',
+      simImsi: '404459123456789',
+      imei: '867492049102847',
+      deviceModel: 'OnePlus 11R 5G',
+      operator: 'Airtel Maharashtra',
+      status: 'ACTIVE',
+    },
+  ]);
+
+  await database.insert(schema.citizenDocuments).values([
+    {
+      citizenId: AARAV_PATEL_ID,
+      documentType: 'AADHAAR_CARD',
+      title: 'Aadhaar Identity Document',
+      issuer: 'Unique Identification Authority of India',
+      documentNumber: 'XXXX-XXXX-4567',
+      issueDate: '2011-08-20',
+      verificationStatus: 'VERIFIED',
+      provenanceId: 'prov_uidai_aarav_4567',
+    },
+    {
+      citizenId: AARAV_PATEL_ID,
+      documentType: 'PAN_CARD',
+      title: 'Permanent Account Number',
+      issuer: 'Income Tax Department',
+      documentNumber: 'BCDEF****K',
+      issueDate: '2013-11-14',
+      verificationStatus: 'VERIFIED',
+      provenanceId: 'prov_itd_aarav_5678k',
+    },
+    {
+      citizenId: AARAV_PATEL_ID,
+      documentType: 'DRIVING_LICENCE',
+      title: 'Driving Licence',
+      issuer: 'Maharashtra Transport Department (MH-12)',
+      documentNumber: 'MH-12-2016-******',
+      issueDate: '2016-06-18',
+      expiryDate: '2036-06-17',
+      verificationStatus: 'VERIFIED',
+      provenanceId: 'prov_rto_aarav_mh12',
+    },
+  ]);
+
+  await database.insert(schema.governmentInbox).values([
+    {
+      citizenId: AARAV_PATEL_ID,
+      category: 'NOTICE',
+      title: 'Advance Tax Assessment for FY 2026-27',
+      whatHappened: 'Third quarter advance tax schedule is published for individual taxpayers.',
+      whyItMatters: 'Timely installment payments prevent statutory interest under section 234B/C.',
+      whatToDo: 'Review self-assessment calculations before the statutory quarterly date.',
+      byWhen: '15 Dec 2026',
+      whatHappensNext: 'INDRA will check for any prepaid TDS credits in your Form 26AS.',
+      workflowCode: null,
+      isRead: false,
+      isResolved: false,
+    },
+  ]);
+  }
+
   console.log('[Seed] Seeding completed successfully!');
-  return { citizenId: PRIYA_SHARMA_ID };
+  return { citizenId: PRIYA_SHARMA_ID, secondaryCitizenId: AARAV_PATEL_ID };
 }
 
 // Auto-run if executed directly

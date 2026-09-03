@@ -42,11 +42,15 @@ export class IntentEngine {
       statutoryAuthority: 'Ministry of Corporate Affairs (MCA) & MSME',
       patterns: [
         /start\s+.*(company|business|startup|firm|pvt\s+ltd|enterprise)/i,
+        /incoorp?erat(e|ion)/i,
         /incorporat(e|ion)/i,
         /open\s+.*(company|business|firm|startup|pvt\s+ltd|enterprise)/i,
         /register\s+.*(company|business|firm|startup|pvt\s+ltd)/i,
         /create\s+.*(company|business|firm|startup)/i,
         /formation\s+of\s+.*(company|business)/i,
+        /how\s+do\s+i\s+incorporate\s+(a\s+)?startup/i,
+        /need\s+to\s+set\s+up\s+a\s+business/i,
+        /set\s+up\s+a\s+business/i,
       ],
       extractEntities: (q) => {
         const match = q.match(/(?:called|named)\s+([A-Za-z0-9\s]+)/i);
@@ -66,11 +70,31 @@ export class IntentEngine {
         /pf\s+(transfer|stuck|missing|dormant|claim|balance|consolidation)/i,
         /epfo\s+(transfer|claim|passbook|balance|account)/i,
         /provident\s+fund/i,
+        /pf\s+.*(stuck|missing|dormant|unlinked|sitting\s+there)/i,
+        /pf\s+transfer\s+.*(stuck|old\s+company|previous)/i,
+        /old\s+employer('s)?\s+pf\s+(hasn't\s+moved|stuck)/i,
         /find\s+my\s+old\s+pf/i,
         /old\s+pf/i,
+        /recover\s+my\s+old\s+pf/i,
+        /my\s+pf\s+is\s+just\s+sitting\s+there/i,
         /dormant\s+(pf|epf|provident)/i,
         /consolidate\s+.*(pf|epf|provident\s+fund)/i,
         /unlinked\s+(pf|epfo|provident)/i,
+        /bro\s+.*pf.*stuck/i,
+      ],
+    },
+    {
+      intentId: 'TRANSFER_ACTIVE_PF',
+      category: 'EMPLOYMENT',
+      workflowCode: 'RECOVER_DORMANT_PF',
+      actionTitle: 'Transfer Active Provident Fund',
+      actionDescription: 'Submit an EPFO Form 13 online transfer from your previous employer to your current employer.',
+      humanExplanation: "I think you're looking to transfer your active PF from your previous employer to your current employer",
+      statutoryAuthority: "Employees' Provident Fund Organisation (EPFO - Form 13)",
+      patterns: [
+        /transfer\s+(my\s+)?(pf|epf)\s+(to|between|into)\s+(my\s+)?(new|current|present)\s+(employer|company|job)/i,
+        /form\s+13\s+(online\s+)?transfer/i,
+        /switch\s+pf\s+to\s+new\s+job/i,
       ],
     },
     {
@@ -82,14 +106,17 @@ export class IntentEngine {
       humanExplanation: 'Emergency handset blacklisting and cellular protection',
       statutoryAuthority: 'Central Equipment Identity Register (CEIR & DoT)',
       patterns: [
-        /(lost|stolen)\s+(my\s+)?(phone|mobile|device|handset)/i,
-        /(phone|mobile|device|handset)\s+(was\s+)?(stolen|lost)/i,
+        /(lost|stolen|steln)\s+(my\s+)?(phone|mobile|device|handset|phne)/i,
+        /(phone|mobile|device|handset|phne)\s+(was\s+)?(stolen|lost|steln)/i,
         /block\s+.*(phone|sim|imei|handset)/i,
         /ceir\s+(block|blacklist)/i,
         /blacklist\s+.*(imei|phone|handset)/i,
         /stolen\s+imei/i,
         /mobile\s+theft/i,
         /lost\s+device/i,
+        /phone\s+gone\s+sim\s+gone/i,
+        /handset\s+disappeared/i,
+        /snatched\s+(my\s+)?(phone|mobile|handset)/i,
       ],
     },
     {
@@ -108,6 +135,9 @@ export class IntentEngine {
         /name\s+differen(ce|t)/i,
         /pan\s+.*aadhaar.*(name|mismatch|link|differen)/i,
         /aadhaar\s+.*pan.*(name|mismatch|link|differen)/i,
+        /why\s+is\s+my\s+name\s+different\s+on\s+pan/i,
+        /fix\s+my\s+identity\s+records/i,
+        /(aadhaar|pan)\s+and\s+(pan|aadhaar)\s+names\s+don't\s+match/i,
         /harmonize\s+name/i,
         /spelling\s+mistake\s+in\s+pan/i,
       ],
@@ -127,6 +157,7 @@ export class IntentEngine {
         /scholarship(s)?/i,
         /subsid(y|ies)/i,
         /welfare\s+benefits/i,
+        /find\s+benefits\s+for\s+me/i,
       ],
     },
     {
@@ -139,6 +170,8 @@ export class IntentEngine {
       patterns: [
         /renew\s+(my\s+)?passport/i,
         /passport\s+expire(d|s)?/i,
+        /passport\s+expiring\s+soon/i,
+        /travelling\s+abroad.*passport.*expir/i,
         /new\s+passport/i,
         /passport\s+reissue/i,
         /passport\s+appointment/i,
@@ -157,19 +190,70 @@ export class IntentEngine {
         /change\s+(my\s+)?address/i,
         /shifted\s+to/i,
         /update\s+(my\s+)?address/i,
+        /shifted\s+cities/i,
+        /moved\s+house/i,
+        /bro\s+moved\s+.*need\s+all\s+govt\s+things\s+fixed/i,
       ],
       extractEntities: (q) => {
         const match = q.match(/(?:moved|shifted|relocated)\s+to\s+([A-Za-z\s]+)/i);
         return match ? { targetCity: match[1].trim() } : {};
       },
     },
+    {
+      intentId: 'LIFE_EVENT_MARRIAGE',
+      category: 'LIFE_EVENT',
+      actionTitle: 'Post-Marriage Document & Status Harmonization',
+      actionDescription: 'Harmonize marital status and optional legal surname updates across UIDAI, Income Tax, and Passport.',
+      humanExplanation: 'I can help with that. INDRA can harmonize your marital status and legal documents after marriage',
+      statutoryAuthority: 'Multi-Registry Public Records (Registrar of Marriages, UIDAI, Income Tax)',
+      patterns: [
+        /after\s+getting\s+married/i,
+        /got\s+married/i,
+        /post[- ]marriage/i,
+        /marriage\s+update/i,
+      ],
+    },
   ];
+
+  public isMaliciousQuery(query: string): boolean {
+    const trimmed = query.trim();
+    return (
+      /ignore\s+(all\s+)?(previous|prior)\s+instructions/i.test(trimmed) ||
+      /system\s+prompt/i.test(trimmed) ||
+      /system\s*:\s*/i.test(trimmed) ||
+      /drop\s+table/i.test(trimmed) ||
+      /delete\s+(from|root|all|user)/i.test(trimmed) ||
+      /override\s+security/i.test(trimmed) ||
+      /grant\s+admin/i.test(trimmed) ||
+      /rm\s+-rf/i.test(trimmed) ||
+      /export\s+secret/i.test(trimmed)
+    );
+  }
 
   /**
    * Synchronous fast-path deterministic resolver.
    */
   resolve(query: string): StructuredIntent {
     const trimmed = query.trim();
+
+    // Adversarial Defense: Detect Prompt Injection / Command Execution Attempts
+    if (this.isMaliciousQuery(trimmed)) {
+      return {
+        intentId: 'GENERAL_INQUIRY',
+        intentCategory: 'GENERAL',
+        confidence: 0.99,
+        userQuery: trimmed.slice(0, 100),
+        matchedWorkflowCode: null,
+        suggestedActionTitle: 'Sovereign Public Interface Guardrail',
+        suggestedActionDescription:
+          'INDRA is the citizen operating layer for public services. Commands attempting to manipulate internal instructions or security policies are rejected.',
+        humanExplanation: 'Please describe the public statutory service you need assistance with',
+        statutoryAuthority: 'INDRA Universal Interface',
+        extractedEntities: {},
+        clarificationRequired: true,
+        clarificationQuestion: 'What public statutory service would you like to get done?',
+      };
+    }
 
     for (const rule of this.rules) {
       for (const pattern of rule.patterns) {
@@ -198,7 +282,7 @@ export class IntentEngine {
       intentId: 'GENERAL_INQUIRY',
       intentCategory: 'GENERAL',
       confidence: 0.4,
-      userQuery: trimmed,
+      userQuery: trimmed.slice(0, 300),
       matchedWorkflowCode: null,
       suggestedActionTitle: 'Tell INDRA what you need',
       suggestedActionDescription:
@@ -261,7 +345,6 @@ export class IntentEngine {
       // 3. Workflow Validation
       let matchedWorkflowCode: string | null = null;
       if (matchingRule?.workflowCode) {
-        // Enforce that workflow code strictly matches catalog definition
         matchedWorkflowCode = matchingRule.workflowCode;
       }
 

@@ -130,7 +130,7 @@ export function DynamicWorkspaceRenderer({
         >
           <div className="flex items-center space-x-2 text-xs font-bold text-[#0F172A]">
             <ShieldCheckIcon className="w-4 h-4 text-emerald-600" />
-            <span>Verified Public Ground Truth (Zero Re-typing)</span>
+            <span>Verified Synthetic Ground Truth (Demonstration Registry)</span>
           </div>
           <div className="flex items-center space-x-2 text-xs text-[#64748B]">
             <span>{isInspectorOpen ? 'Hide' : 'Inspect'}</span>
@@ -152,19 +152,25 @@ export function DynamicWorkspaceRenderer({
               <>
                 <div className="p-3 rounded-xl bg-[#FAFAFA] border border-[#E2E8F0]">
                   <div className="text-[11px] text-[#64748B] font-medium">Citizen Full Legal Name</div>
-                  <div className="font-bold text-[#0F172A] mt-0.5">{citizen?.primaryName || 'Priya Sharma'}</div>
+                  <div className="font-bold text-[#0F172A] mt-0.5">{citizen?.primaryName || 'Verified Citizen'}</div>
                   <div className="text-[10px] text-emerald-700 font-semibold mt-1">✓ Verified via UIDAI Ground Truth</div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-[#FAFAFA] border border-[#E2E8F0]">
                   <div className="text-[11px] text-[#64748B] font-medium">Permanent Account Number (PAN)</div>
-                  <div className="font-bold text-[#0F172A] mt-0.5 mono">ABCPS****F</div>
+                  <div className="font-bold text-[#0F172A] mt-0.5 mono">
+                    {(workflowRun.contextData?.panNumber as string) || citizen?.panNumber || 'Credential on file'}
+                  </div>
                   <div className="text-[10px] text-sky-700 font-semibold mt-1">✓ Income Tax Department</div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-[#FAFAFA] border border-[#E2E8F0]">
                   <div className="text-[11px] text-[#64748B] font-medium">Verified Residential Address</div>
-                  <div className="font-bold text-[#0F172A] mt-0.5">Indiranagar, Bengaluru, KA - 560038</div>
+                  <div className="font-bold text-[#0F172A] mt-0.5">
+                    {citizen?.currentCity && citizen?.currentState
+                      ? `${citizen.currentCity}, ${citizen.currentState}`
+                      : 'Address record verified'}
+                  </div>
                   <div className="text-[10px] text-emerald-700 font-semibold mt-1">✓ UIDAI Address Registry</div>
                 </div>
               </>

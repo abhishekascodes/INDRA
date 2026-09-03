@@ -13,13 +13,17 @@ import {
   fetchApplications,
   fetchAuditLogs,
   fetchConsents,
+  fetchSyntheticCitizensList,
   startWorkflow,
   subscribeEvents,
+  setActiveCitizenId,
+  getActiveCitizenId,
 } from './api.js';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [citizen, setCitizen] = useState<any>(null);
+  const [availableCitizens, setAvailableCitizens] = useState<any[]>([]);
   const [inboxItems, setInboxItems] = useState<any[]>([]);
   const [vaultDocs, setVaultDocs] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
@@ -30,21 +34,26 @@ export function App() {
 
   const loadData = useCallback(async () => {
     try {
-      const [prof, inb, vlt, apps, logs, cs] = await Promise.all([
+      const [prof, inb, vlt, apps, logs, cs, citizenList] = await Promise.all([
         fetchCitizenProfile().catch(() => ({ citizen: null })),
         fetchInbox().catch(() => ({ items: [] })),
         fetchVault().catch(() => ({ documents: [] })),
         fetchApplications().catch(() => ({ applications: [] })),
         fetchAuditLogs().catch(() => ({ logs: [] })),
         fetchConsents().catch(() => ({ consents: [] })),
+        fetchSyntheticCitizensList().catch(() => ({ citizens: [] })),
       ]);
 
-      if (prof.citizen) setCitizen(prof.citizen);
+      const citizenData = prof.citizen || prof.profile;
+      if (citizenData) setCitizen(citizenData);
       setInboxItems(inb.items || []);
       setVaultDocs(vlt.documents || []);
       setApplications(apps.applications || []);
       setAuditLogs(logs.logs || []);
       setConsents(cs.consents || []);
+      if (citizenList.citizens && citizenList.citizens.length > 0) {
+        setAvailableCitizens(citizenList.citizens);
+      }
     } catch (err) {
       console.error('Failed to load portal data:', err);
     } finally {
@@ -58,48 +67,55 @@ export function App() {
     // Subscribe to SSE Event Stream for live system updates
     const unsubscribe = subscribeEvents((event) => {
       // Refresh applications and audit logs on any workflow state change
-      if (
-        event.type?.startsWith('WORKFLOW_') ||
-        event.type?.startsWith('APPLICATION_') ||
-        event.type?.startsWith('CAPABILITY_')
-      ) {
-        loadData();
+      if (event.aggregateType === 'WORKFLOW') {
+        fetchApplications().then((a) => setApplications(a.applications || [])).catch(() => {});
+        fetchAuditLogs().then((l) => setAuditLogs(l.logs || [])).catch(() => {});
+        fetchConsents().then((c) => setConsents(c.consents || [])).catch(() => {});
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, [loadData]);
+
+  const handleSwitchCitizen = (citizenId: string) => {
+    setActiveCitizenId(citizenId);
+    setActiveWorkflowRun(null);
+    setIsLoading(true);
+    loadData();
+  };
 
   const handleLaunchWorkflow = async (
     workflowCode: string,
     initialContext?: Record<string, unknown>
   ) => {
     try {
-      setIsLoading(true);
       const run = await startWorkflow(workflowCode, initialContext);
       setActiveWorkflowRun(run);
     } catch (err: any) {
-      alert(`Failed to launch workflow: ${err.message}`);
-    } finally {
-      setIsLoading(false);
+      alert(`Failed to start action: ${err.message}`);
     }
   };
 
-  const handleWorkflowUpdated = (updated: WorkflowRunSummary) => {
-    setActiveWorkflowRun(updated);
-    loadData();
+  const handleWorkflowUpdated = (updatedRun: WorkflowRunSummary) => {
+    setActiveWorkflowRun(updatedRun);
+    // Refresh background state
+    fetchApplications().then((a) => setApplications(a.applications || [])).catch(() => {});
+    fetchAuditLogs().then((l) => setAuditLogs(l.logs || [])).catch(() => {});
+    fetchConsents().then((c) => setConsents(c.consents || [])).catch(() => {});
   };
 
-  const handleExitWorkspace = () => {
+  const handleCloseWorkspace = () => {
     setActiveWorkflowRun(null);
     loadData();
   };
 
-  const unreadCount = inboxItems.filter((i) => i.status === 'UNREAD').length;
+  const unreadCount = inboxItems.filter((i) => !i.isRead).length;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex flex-col selection:bg-[#0F172A] selection:text-white">
-      {/* HEADER */}
+    <div className="min-h-screen flex flex-col bg-[#FAFAFA] text-[#0F172A] font-sans">
+      {/* 1. CIVIC HEADER WITH SYNTHETIC DISCLOSURE & CITIZEN SWITCHER */}
       <Header
         activeTab={activeTab}
         onSelectTab={(tab) => {
@@ -107,20 +123,34 @@ export function App() {
           setActiveWorkflowRun(null);
         }}
         inboxUnreadCount={unreadCount}
-        citizenName={citizen?.primaryName || 'Priya Sharma'}
-        citizenLocation={`${citizen?.currentCity || 'Bengaluru'}, ${citizen?.currentState || 'KA'}`}
+        citizenName={citizen?.primaryName}
+        citizenLocation={
+          citizen?.currentCity && citizen?.currentState
+            ? `${citizen.currentCity}, ${citizen.currentState}`
+            : undefined
+        }
+        availableCitizens={availableCitizens}
+        activeCitizenId={getActiveCitizenId() || citizen?.id}
+        onSwitchCitizen={handleSwitchCitizen}
       />
 
-      {/* MAIN CONTENT CANVAS */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 pt-8 pb-16">
-        {activeWorkflowRun ? (
+      {/* 2. MAIN APPLICATION CONTENT */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+        {isLoading ? (
+          <div className="p-16 text-center text-xs text-[#64748B]">
+            <div className="inline-block animate-spin w-6 h-6 border-2 border-[#0F172A] border-t-transparent rounded-full mb-3"></div>
+            <div>Synchronizing verified public records...</div>
+          </div>
+        ) : activeWorkflowRun ? (
+          /* ACTIVE TASK WORKSPACE */
           <DynamicWorkspaceRenderer
             workflowRun={activeWorkflowRun}
             citizen={citizen}
             onWorkflowUpdated={handleWorkflowUpdated}
-            onExitWorkspace={handleExitWorkspace}
+            onExitWorkspace={handleCloseWorkspace}
           />
         ) : (
+          /* REGULAR PORTAL SCREENS */
           <>
             {activeTab === 'home' && (
               <PersonalGovernmentHome
@@ -155,11 +185,15 @@ export function App() {
         )}
       </main>
 
-      {/* FOOTER */}
+      {/* 3. CIVIC FOOTER WITH SYNTHETIC ENVIRONMENT NOTICE */}
       <footer className="border-t border-[#E2E8F0] bg-white py-6 text-center text-xs text-[#94A3B8]">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div>INDRA — Sovereign Citizen Operating Layer of India</div>
-          <div>All transactions cryptographically verified and audited under statutory law.</div>
+          <div className="font-semibold text-[#64748B]">
+            INDRA — Sovereign Citizen Operating Layer · Synthetic Evaluation Environment
+          </div>
+          <div className="text-[11px] text-[#94A3B8]">
+            Simulated public infrastructure demonstration. No live government databases are accessed or altered.
+          </div>
         </div>
       </footer>
     </div>

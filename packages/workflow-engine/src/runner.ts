@@ -107,6 +107,11 @@ export class WorkflowRunner {
     }
 
     const currentRun = runs[0];
+    if (currentRun.state === 'COMPLETED' || currentRun.state === 'FAILED') {
+      throw new Error(
+        `Cannot resume workflow run '${params.workflowRunId}' because it is already in terminal state '${currentRun.state}'`
+      );
+    }
     const currentContext = (currentRun.contextData as Record<string, unknown>) || {};
 
     const updatedContext: Record<string, unknown> = {
