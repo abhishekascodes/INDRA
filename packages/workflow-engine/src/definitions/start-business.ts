@@ -11,14 +11,14 @@ export const StartBusinessWorkflow: WorkflowContract = {
       stepId: 'step_details',
       title: 'Company Details & Structure',
       capabilityId: 'business.reserve_name',
-      dynamicUI: () => ({
+      dynamicUI: (ctx: any) => ({
         workspaceTitle: 'Set Up Your Enterprise',
         workspaceSubtitle: 'Tell INDRA about the company you wish to establish.',
         currentStepIndex: 1,
         totalSteps: 3,
         knownInformation: [
-          { label: 'Director / Founder', value: 'Priya Sharma', source: 'Verified Aadhaar' },
-          { label: 'Director PAN', value: 'ABCPS****F', source: 'Income Tax Records' },
+          { label: 'Director / Founder', value: ctx.citizenName || 'Verified Citizen', source: 'Verified Identity' },
+          { label: 'Director PAN', value: ctx.panNumber || 'Verified PAN', source: 'Income Tax Ground Truth' },
         ],
         requiredFields: [
           {
@@ -70,11 +70,11 @@ export const StartBusinessWorkflow: WorkflowContract = {
         citizenId: ctx.citizenId,
         companyName: ctx.companyName || 'Apex AI Innovations Private Limited',
         entityType: ctx.entityType || 'PRIVATE_LIMITED',
-        registeredAddress: {
-          line1: 'Flat 402, Shanti Heights, Indiranagar',
-          city: 'Bengaluru',
-          state: 'Karnataka',
-          pincode: '560038',
+        registeredAddress: (ctx.registeredAddress as any) || {
+          line1: `${ctx.currentCity || 'City'} Central`,
+          city: (ctx.currentCity as string) || 'Bengaluru',
+          state: (ctx.currentState as string) || 'Karnataka',
+          pincode: '560001',
         },
         capitalInr: 100000,
       }),

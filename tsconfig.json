@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@indra/contracts": ["./packages/contracts/src/index.ts"],
+      "@indra/database": ["./packages/database/src/index.ts"],
+      "@indra/spi-adapters": ["./packages/spi-adapters/src/index.ts"],
+      "@indra/policy-engine": ["./packages/policy-engine/src/index.ts"],
+      "@indra/event-bus": ["./packages/event-bus/src/index.ts"],
+      "@indra/capability-engine": ["./packages/capability-engine/src/index.ts"],
+      "@indra/workflow-engine": ["./packages/workflow-engine/src/index.ts"],
+      "@indra/intent-engine": ["./packages/intent-engine/src/index.ts"]
+    }
+  },
+  "include": ["scripts/**/*", "tests/**/*"]
+}

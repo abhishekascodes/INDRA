@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import type { CapabilityContract } from '@indra/contracts';
 import { TelecomSpiAdapter } from '@indra/spi-adapters';
+import { getDb, schema } from '@indra/database';
+import { eq } from 'drizzle-orm';
 
 const telecomAdapter = new TelecomSpiAdapter();
 
@@ -43,6 +45,15 @@ export const TelecomBlockStolenDeviceCapability: CapabilityContract<
   }),
   execute: async (input) => {
     return telecomAdapter.blockStolenDevice(input);
+  },
+  compensate: async (input, output) => {
+    const db = await getDb();
+    if (output?.imei) {
+      await db
+        .update(schema.spiTelecomRecords)
+        .set({ status: 'ACTIVE', reportedStolenAt: null })
+        .where(eq(schema.spiTelecomRecords.imei, output.imei));
+    }
   },
   provenanceGenerator: (input, output) => [
     {

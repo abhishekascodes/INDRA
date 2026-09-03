@@ -11,15 +11,15 @@ export const LostPhoneWorkflow: WorkflowContract = {
       stepId: 'step_confirm',
       title: 'Confirm Lost Device Details',
       capabilityId: 'telecom.block_stolen_device',
-      dynamicUI: () => ({
+      dynamicUI: (ctx: any) => ({
         workspaceTitle: 'Emergency Device Security',
-        workspaceSubtitle: 'INDRA identified your registered device on Airtel network.',
+        workspaceSubtitle: `INDRA identified your registered device on ${ctx.telecomOperator || 'telecom'} network.`,
         currentStepIndex: 1,
         totalSteps: 2,
         knownInformation: [
-          { label: 'Device Model', value: 'OnePlus 11 5G (Titan Black, 256GB)', source: 'Telecom Equipment Registry' },
-          { label: 'Linked Primary Number', value: '+91 98765 43210', source: 'Aadhaar Linked Mobile' },
-          { label: 'IMEI', value: '864920051234567', source: 'CEIR Device Registry' },
+          { label: 'Device Model', value: ctx.telecomDeviceModel || 'Registered Handset', source: 'Telecom Equipment Registry' },
+          { label: 'Linked Primary Number', value: ctx.telecomMobile || ctx.primaryMobile || 'Linked Mobile', source: 'Cellular Records' },
+          { label: 'IMEI', value: ctx.telecomImei || 'Registered IMEI', source: 'CEIR Device Registry' },
         ],
         requiredFields: [
           {
@@ -35,9 +35,9 @@ export const LostPhoneWorkflow: WorkflowContract = {
       }),
       inputMapper: (ctx) => ({
         citizenId: ctx.citizenId,
-        reason: 'STOLEN',
-        mobileNumber: '+91 98765 43210',
-        imei: '864920051234567',
+        reason: (ctx.reason as 'STOLEN' | 'LOST') || 'STOLEN',
+        mobileNumber: (ctx.telecomMobile as string) || (ctx.primaryMobile as string),
+        imei: ctx.telecomImei as string,
       }),
       nextStepId: null, // Single emergency atomic action
     },

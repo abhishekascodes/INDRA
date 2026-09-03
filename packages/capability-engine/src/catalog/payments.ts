@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import type { CapabilityContract } from '@indra/contracts';
 import { PaymentsSpiAdapter } from '@indra/spi-adapters';
+import { getDb, schema } from '@indra/database';
+import { eq } from 'drizzle-orm';
 
 const paymentsAdapter = new PaymentsSpiAdapter();
 
@@ -40,11 +42,20 @@ export const PaymentsProcessFeeCapability: CapabilityContract<
     paymentId: z.string(),
     referenceNo: z.string(),
     amountInr: z.number(),
-    status: z.enum(['SUCCESS', 'FAILED']),
+    status: z.enum(['SUCCESS', 'FAILED', 'REFUNDED']),
     receiptNumber: z.string(),
   }),
   execute: async (input) => {
     return paymentsAdapter.processPayment(input);
+  },
+  compensate: async (input, output) => {
+    const db = await getDb();
+    if (output?.paymentId) {
+      await db
+        .update(schema.payments)
+        .set({ status: 'REFUNDED' })
+        .where(eq(schema.payments.id, output.paymentId));
+    }
   },
   provenanceGenerator: (input, output) => [
     {

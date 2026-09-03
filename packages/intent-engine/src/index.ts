@@ -19,10 +19,12 @@ export class IntentEngine {
       actionTitle: 'Incorporate Enterprise',
       actionDescription: 'Establish your company, reserve trade name, and obtain PAN, GSTIN & Udyam registration.',
       patterns: [
-        /start\s+.*(company|business|startup|firm|pvt\s+ltd)/i,
+        /start\s+.*(company|business|startup|firm|pvt\s+ltd|enterprise)/i,
         /incorporat(e|ion)/i,
-        /open\s+.*(company|business|firm|startup|pvt\s+ltd)/i,
-        /register\s+.*(company|business|firm|startup)/i,
+        /open\s+.*(company|business|firm|startup|pvt\s+ltd|enterprise)/i,
+        /register\s+.*(company|business|firm|startup|pvt\s+ltd)/i,
+        /create\s+.*(company|business|firm|startup)/i,
+        /formation\s+of\s+.*(company|business)/i,
       ],
       extractEntities: (q) => {
         const match = q.match(/(?:called|named)\s+([A-Za-z0-9\s]+)/i);
@@ -36,11 +38,14 @@ export class IntentEngine {
       actionTitle: 'Recover Inactive Provident Fund',
       actionDescription: 'Identify unlinked EPFO member accounts and consolidate funds into your active account.',
       patterns: [
-        /pf\s+(transfer|stuck|missing|dormant|claim)/i,
-        /epfo\s+(transfer|claim|passbook)/i,
+        /pf\s+(transfer|stuck|missing|dormant|claim|balance|consolidation)/i,
+        /epfo\s+(transfer|claim|passbook|balance|account)/i,
         /provident\s+fund/i,
         /find\s+my\s+old\s+pf/i,
         /old\s+pf/i,
+        /dormant\s+(pf|epf|provident)/i,
+        /consolidate\s+.*(pf|epf|provident\s+fund)/i,
+        /unlinked\s+(pf|epfo|provident)/i,
       ],
     },
     {
@@ -52,8 +57,12 @@ export class IntentEngine {
       patterns: [
         /(lost|stolen)\s+(my\s+)?(phone|mobile|device|handset)/i,
         /(phone|mobile|device|handset)\s+(was\s+)?(stolen|lost)/i,
-        /block\s+(my\s+)?(phone|sim|imei)/i,
+        /block\s+.*(phone|sim|imei|handset)/i,
+        /ceir\s+(block|blacklist)/i,
+        /blacklist\s+.*(imei|phone|handset)/i,
+        /stolen\s+imei/i,
         /mobile\s+theft/i,
+        /lost\s+device/i,
       ],
     },
     {
@@ -64,10 +73,14 @@ export class IntentEngine {
       actionDescription: 'Resolve name variations between PAN and Aadhaar using verified government ground truth.',
       patterns: [
         /name\s+mismatch/i,
-        /name\s+on\s+pan\s+is\s+wrong/i,
+        /name\s+on\s+pan\s+(is\s+)?wrong/i,
         /fix\s+name/i,
         /differen(ce|t)\s+name/i,
-        /pan\s+aadhaar\s+link/i,
+        /name\s+differen(ce|t)/i,
+        /pan\s+.*aadhaar.*(name|mismatch|link|differen)/i,
+        /aadhaar\s+.*pan.*(name|mismatch|link|differen)/i,
+        /harmonize\s+name/i,
+        /spelling\s+mistake\s+in\s+pan/i,
       ],
     },
     {
@@ -76,11 +89,12 @@ export class IntentEngine {
       actionTitle: 'Check Benefit Eligibility',
       actionDescription: 'Evaluate your socio-economic indicators against central and state welfare programmes.',
       patterns: [
-        /what\s+benefits\s+am\s+i\s+eligible/i,
+        /what\s+benefits/i,
         /eligible\s+for/i,
         /government\s+schemes/i,
         /scholarship(s)?/i,
         /subsid(y|ies)/i,
+        /welfare\s+benefits/i,
       ],
     },
     {
@@ -92,6 +106,7 @@ export class IntentEngine {
         /renew\s+(my\s+)?passport/i,
         /passport\s+expire(d|s)?/i,
         /new\s+passport/i,
+        /passport\s+reissue/i,
         /passport\s+appointment/i,
       ],
     },
@@ -105,6 +120,7 @@ export class IntentEngine {
         /relocat(ed|ing)\s+to/i,
         /change\s+(my\s+)?address/i,
         /shifted\s+to/i,
+        /update\s+(my\s+)?address/i,
       ],
       extractEntities: (q) => {
         const match = q.match(/(?:moved|shifted|relocated)\s+to\s+([A-Za-z\s]+)/i);

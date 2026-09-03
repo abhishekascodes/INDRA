@@ -15,10 +15,10 @@ export const ResolveMismatchWorkflow: WorkflowContract = {
         citizenId: ctx.citizenId,
         credentialType: 'PAN',
       }),
-      onSuccess: () => ({
+      onSuccess: (_output: any, ctx: any) => ({
         inconsistencyDetected: true,
-        sourceNameAadhaar: 'Priya Sharma',
-        conflictingNamePan: 'Priya S.',
+        sourceNameAadhaar: ctx.citizenName || 'Verified Citizen',
+        conflictingNamePan: ctx.panHolderName || 'Conflicting Record',
       }),
       nextStepId: 'step_sync',
     },
@@ -28,8 +28,8 @@ export const ResolveMismatchWorkflow: WorkflowContract = {
       capabilityId: 'identity.update_pan_name',
       inputMapper: (ctx) => ({
         citizenId: ctx.citizenId,
-        correctedName: 'Priya Sharma',
-        supportingAadhaarNumber: 'XXXX-XXXX-9012',
+        correctedName: (ctx.citizenName as string) || 'Priya Sharma',
+        supportingAadhaarNumber: (ctx.aadhaarNumber as string) || 'XXXX-XXXX-9012',
       }),
       nextStepId: null,
     },

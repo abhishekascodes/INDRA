@@ -17,10 +17,18 @@ export const RecoverDormantPfWorkflow: WorkflowContract = {
       onSuccess: (output: any) => {
         const dormant = output.dormantAccounts?.[0];
         const active = output.accounts?.find((a: any) => a.status === 'ACTIVE');
+        if (!dormant) {
+          throw new Error('No dormant provident fund account found to consolidate.');
+        }
+        if (!active) {
+          throw new Error('No active provident fund account found to receive consolidated funds.');
+        }
         return {
-          sourceMemberId: dormant?.memberId || 'MHBAN0018274000004928',
-          targetMemberId: active?.memberId || 'KNBLR0049281000010928',
-          amountInr: dormant?.pfBalance || 142500,
+          sourceMemberId: dormant.memberId,
+          targetMemberId: active.memberId,
+          amountInr: dormant.pfBalance,
+          sourceEstablishment: dormant.establishmentName,
+          targetEstablishment: active.establishmentName,
         };
       },
       nextStepId: 'step_transfer',

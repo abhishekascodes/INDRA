@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import type { CapabilityContract } from '@indra/contracts';
 import { EpfoSpiAdapter } from '@indra/spi-adapters';
+import { getDb, schema } from '@indra/database';
+import { eq } from 'drizzle-orm';
 
 const epfoAdapter = new EpfoSpiAdapter();
 
@@ -85,6 +87,34 @@ export const EpfoTransferClaimCapability: CapabilityContract<
       targetMemberId: input.targetMemberId,
       authorizedByCitizen: ctx.authorizationGranted ?? true,
     });
+  },
+  compensate: async (input, output) => {
+    const db = await getDb();
+    const [source] = await db
+      .select()
+      .from(schema.spiEpfoAccounts)
+      .where(eq(schema.spiEpfoAccounts.memberId, input.sourceMemberId));
+    const [target] = await db
+      .select()
+      .from(schema.spiEpfoAccounts)
+      .where(eq(schema.spiEpfoAccounts.memberId, input.targetMemberId));
+
+    if (source && target && output?.transferredAmountInr) {
+      await db
+        .update(schema.spiEpfoAccounts)
+        .set({
+          pfBalance: source.pfBalance + output.transferredAmountInr,
+          status: 'DORMANT',
+        })
+        .where(eq(schema.spiEpfoAccounts.id, source.id));
+
+      await db
+        .update(schema.spiEpfoAccounts)
+        .set({
+          pfBalance: Math.max(0, target.pfBalance - output.transferredAmountInr),
+        })
+        .where(eq(schema.spiEpfoAccounts.id, target.id));
+    }
   },
   provenanceGenerator: (input, output) => [
     {

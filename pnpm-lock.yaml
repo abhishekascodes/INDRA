@@ -217,6 +217,9 @@ importers:
       '@indra/event-bus':
         specifier: workspace:*
         version: link:../event-bus
+      '@indra/policy-engine':
+        specifier: workspace:*
+        version: link:../policy-engine
       drizzle-orm:
         specifier: ^0.39.3
         version: 0.39.3(@electric-sql/pglite@0.2.17)

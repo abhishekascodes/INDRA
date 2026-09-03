@@ -29,7 +29,7 @@ export async function getDb(options: GetDbOptions = {}) {
   }
 
   let client: PGlite;
-  if (options.inMemory || process.env.VITEST) {
+  if (options.inMemory || (process.env.VITEST && !options.dataDir)) {
     client = new PGlite();
   } else {
     const dataDir =

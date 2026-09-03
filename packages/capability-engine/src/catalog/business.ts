@@ -31,6 +31,9 @@ export const BusinessReserveNameCapability: CapabilityContract<
   execute: async (input) => {
     return businessAdapter.checkNameAvailability(input);
   },
+  compensate: async (input, output) => {
+    console.log(`[Compensation] Released corporate reservation code ${output.reservationCode} for ${input.proposedName}`);
+  },
 };
 
 export const BusinessIncorporateCapability: CapabilityContract<any, any> = {

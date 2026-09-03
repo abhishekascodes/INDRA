@@ -17,6 +17,11 @@ const intentEngine = new IntentEngine();
 const workflowRunner = new WorkflowRunner();
 const eventBus = EventBus.getInstance();
 
+export function getAuthenticatedCitizenId(request: any): string {
+  const citizenIdHeader = request.headers['x-citizen-id'] as string;
+  return citizenIdHeader || PRIYA_SHARMA_ID;
+}
+
 export async function buildApp() {
   await server.register(cors, {
     origin: true, // Allow frontend during development
@@ -30,7 +35,6 @@ export async function buildApp() {
 
   // 1. Health Check
   server.get('/api/health', async () => {
-    const db = await getDb();
     const capList = CapabilityRegistry.getInstance().list();
     const wfList = WorkflowRegistry.getInstance().list();
 
@@ -45,33 +49,34 @@ export async function buildApp() {
     };
   });
 
-  // 2. Citizen Profile (Priya Sharma)
-  server.get('/api/citizen/me', async () => {
+  // 2. Citizen Profile (Scoped to authenticated citizen)
+  server.get('/api/citizen/me', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
     const db = await getDb();
     const citizens = await db
       .select()
       .from(schema.citizens)
-      .where(eq(schema.citizens.id, PRIYA_SHARMA_ID));
+      .where(eq(schema.citizens.id, authCitizenId));
 
     if (citizens.length === 0) {
-      return { error: 'Citizen not found' };
+      return reply.status(404).send({ error: 'Citizen not found' });
     }
 
     const citizen = citizens[0];
     const credentials = await db
       .select()
       .from(schema.citizenCredentials)
-      .where(eq(schema.citizenCredentials.citizenId, PRIYA_SHARMA_ID));
+      .where(eq(schema.citizenCredentials.citizenId, authCitizenId));
 
     const addresses = await db
       .select()
       .from(schema.citizenAddresses)
-      .where(eq(schema.citizenAddresses.citizenId, PRIYA_SHARMA_ID));
+      .where(eq(schema.citizenAddresses.citizenId, authCitizenId));
 
     const epfo = await db
       .select()
       .from(schema.spiEpfoAccounts)
-      .where(eq(schema.spiEpfoAccounts.citizenId, PRIYA_SHARMA_ID));
+      .where(eq(schema.spiEpfoAccounts.citizenId, authCitizenId));
 
     return {
       profile: citizen,
@@ -93,25 +98,27 @@ export async function buildApp() {
     };
   });
 
-  // 3. Government Action Inbox
-  server.get('/api/citizen/inbox', async () => {
+  // 3. Government Action Inbox (Scoped)
+  server.get('/api/citizen/inbox', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
     const db = await getDb();
     const items = await db
       .select()
       .from(schema.governmentInbox)
-      .where(eq(schema.governmentInbox.citizenId, PRIYA_SHARMA_ID))
+      .where(eq(schema.governmentInbox.citizenId, authCitizenId))
       .orderBy(desc(schema.governmentInbox.createdAt));
 
     return { items };
   });
 
-  // 4. Verifiable Documents Vault
-  server.get('/api/citizen/vault', async () => {
+  // 4. Verifiable Documents Vault (Scoped)
+  server.get('/api/citizen/vault', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
     const db = await getDb();
     const docs = await db
       .select()
       .from(schema.citizenDocuments)
-      .where(eq(schema.citizenDocuments.citizenId, PRIYA_SHARMA_ID))
+      .where(eq(schema.citizenDocuments.citizenId, authCitizenId))
       .orderBy(desc(schema.citizenDocuments.createdAt));
 
     return { documents: docs };
@@ -128,7 +135,7 @@ export async function buildApp() {
     return resolved;
   });
 
-  // 6. Start Workflow
+  // 6. Start Workflow (Enforcing citizen scoping)
   server.post<{
     Body: { workflowCode: string; citizenId?: string; initialContext?: Record<string, unknown> };
   }>('/api/workflows/start', async (request, reply) => {
@@ -137,7 +144,12 @@ export async function buildApp() {
       return reply.status(400).send({ error: 'workflowCode is required' });
     }
 
-    const targetCitizenId = citizenId || PRIYA_SHARMA_ID;
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    if (citizenId && citizenId !== authCitizenId) {
+      return reply.status(403).send({ error: 'Forbidden: Cannot start workflow for another citizen' });
+    }
+
+    const targetCitizenId = citizenId || authCitizenId;
     try {
       const summary = await workflowRunner.startWorkflow({
         workflowCode,
@@ -151,23 +163,39 @@ export async function buildApp() {
     }
   });
 
-  // 7. Get Workflow Run
+  // 7. Get Workflow Run (Enforcing citizen scoping)
   server.get<{ Params: { id: string } }>('/api/workflows/:id', async (request, reply) => {
     const { id } = request.params;
     const summary = await workflowRunner.getWorkflowRun(id);
     if (!summary) {
       return reply.status(404).send({ error: 'Workflow run not found' });
     }
+
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    if (summary.citizenId !== authCitizenId) {
+      return reply.status(403).send({ error: 'Forbidden: Access to workflow run denied' });
+    }
+
     return summary;
   });
 
-  // 8. Resume Workflow (Submit input or Authorize)
+  // 8. Resume Workflow (Enforcing citizen scoping)
   server.post<{
     Params: { id: string };
     Body: { input?: Record<string, unknown>; authorize?: boolean };
   }>('/api/workflows/:id/resume', async (request, reply) => {
     const { id } = request.params;
     const { input, authorize } = request.body || {};
+
+    const existing = await workflowRunner.getWorkflowRun(id);
+    if (!existing) {
+      return reply.status(404).send({ error: 'Workflow run not found' });
+    }
+
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    if (existing.citizenId !== authCitizenId) {
+      return reply.status(403).send({ error: 'Forbidden: Cannot resume another citizen\'s workflow' });
+    }
 
     try {
       const summary = await workflowRunner.resumeWorkflow({

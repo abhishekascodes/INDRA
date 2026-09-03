@@ -12,6 +12,7 @@
     "@indra/contracts": "workspace:*",
     "@indra/database": "workspace:*",
     "@indra/capability-engine": "workspace:*",
+    "@indra/policy-engine": "workspace:*",
     "@indra/event-bus": "workspace:*",
     "drizzle-orm": "^0.39.3"
   },
