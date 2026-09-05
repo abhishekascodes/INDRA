@@ -65,3 +65,42 @@ export const TelecomBlockStolenDeviceCapability: CapabilityContract<
     },
   ],
 };
+
+export const TelecomInquireRegisteredSimsCapability: CapabilityContract<any, any> = {
+  id: 'telecom.inquire_registered_sims',
+  version: '1.0.0',
+  domain: 'TELECOM',
+  humanName: 'Inquire Registered SIM Cards (TAFCOP)',
+  description: 'Audits Telecom Analytics for Fraud management and Consumer Protection (TAFCOP) for all mobile numbers issued under citizen identity.',
+  sideEffectClass: 'READ_ONLY',
+  requiresHumanAuthorization: false,
+  inputSchema: z.object({
+    citizenId: z.string(),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    totalActiveConnections: z.number(),
+    connections: z.array(
+      z.object({
+        mobileMasked: z.string(),
+        operator: z.string(),
+        activationDate: z.string(),
+        isFlaggedUnauthorized: z.boolean(),
+      })
+    ),
+    message: z.string(),
+  }),
+  execute: async (input) => {
+    return telecomAdapter.inquireRegisteredSims(input);
+  },
+  provenanceGenerator: (input, output) => [
+    {
+      entityType: 'TAFCOP_SIM_AUDIT',
+      entityId: input.citizenId,
+      sourceType: 'FACT',
+      sourceAuthority: 'Department of Telecommunications (TAFCOP Portal)',
+      confidence: 100,
+    },
+  ],
+};
+

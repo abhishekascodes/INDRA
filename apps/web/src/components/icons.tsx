@@ -151,3 +151,181 @@ export function ClockIcon({ className = "w-4 h-4" }: { className?: string }) {
     </svg>
   );
 }
+
+export function MapPinIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21c4-4.5 6-8.5 6-12A6 6 0 0 0 6 9c0 3.5 2 7.5 6 12z" />
+      <circle cx="12" cy="9" r="2.5" />
+    </svg>
+  );
+}
+
+export function CloseIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+export function EditIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
+export function AlertTriangleIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+export function RefreshIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+      <path d="M8 16H3v5" />
+    </svg>
+  );
+}
+
+export function UserIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+export function IndraEmblemIcon({ className = "w-9 h-9" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="40" height="40" rx="10" fill="#0F172A" />
+      {/* Outer decorative ring */}
+      <circle cx="20" cy="20" r="14" stroke="#4F46E5" strokeWidth="1.5" strokeDasharray="3 2" />
+      {/* Inner solid ring */}
+      <circle cx="20" cy="20" r="10" stroke="#F59E0B" strokeWidth="1.5" />
+      {/* Center Chakra spokes */}
+      <circle cx="20" cy="20" r="3" fill="#F59E0B" />
+      <line x1="20" y1="10" x2="20" y2="17" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="20" y1="23" x2="20" y2="30" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="10" y1="20" x2="17" y2="20" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="23" y1="20" x2="30" y2="20" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="12.93" y1="12.93" x2="17.88" y2="17.88" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="22.12" y1="22.12" x2="27.07" y2="27.07" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="27.07" y1="12.93" x2="22.12" y2="17.88" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="17.88" y1="22.12" x2="12.93" y2="27.07" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function CitizenAvatarIcon({ className = "w-8 h-8" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="18" cy="18" r="17" fill="#F1F5F9" stroke="#CBD5E1" strokeWidth="1.5" />
+      {/* Head */}
+      <circle cx="18" cy="14" r="5.5" fill="#475569" />
+      {/* Shoulders */}
+      <path d="M7.5 28.5C7.5 23.5 12 21 18 21C24 21 28.5 23.5 28.5 28.5" fill="#334155" />
+      {/* Verified Shield Badge on Avatar */}
+      <circle cx="27" cy="27" r="5" fill="#10B981" />
+      <path d="M25 27L26.5 28.5L29 25.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function TaxDocIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="8" y1="13" x2="14" y2="13" />
+      <line x1="8" y1="17" x2="16" y2="17" />
+      {/* Rupee horizontal lines */}
+      <line x1="8" y1="10" x2="13" y2="10" />
+    </svg>
+  );
+}
+
+export function PassportTravelIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="2" width="14" height="20" rx="2" />
+      <circle cx="12" cy="11" r="4" />
+      <path d="M12 7c-2 1.5-2 6.5 0 8" />
+      <path d="M12 7c2 1.5 2 6.5 0 8" />
+      <line x1="8" y1="11" x2="16" y2="11" />
+      <line x1="9" y1="18" x2="15" y2="18" />
+    </svg>
+  );
+}
+
+export function VehicleCarIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 11l2-5h10l2 5" />
+      <rect x="3" y="11" width="18" height="8" rx="2" />
+      <circle cx="7" cy="15" r="1.5" />
+      <circle cx="17" cy="15" r="1.5" />
+      <path d="M9 19v2M15 19v2" />
+    </svg>
+  );
+}
+
+export function SavingsBankIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v2H3V9z" />
+      <rect x="5" y="11" width="2.5" height="7" />
+      <rect x="10.75" y="11" width="2.5" height="7" />
+      <rect x="16.5" y="11" width="2.5" height="7" />
+      <rect x="2" y="18" width="20" height="3" rx="1" />
+    </svg>
+  );
+}
+
+export function LandParcelIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+      <line x1="9" y1="3" x2="9" y2="18" />
+      <line x1="15" y1="6" x2="15" y2="21" />
+    </svg>
+  );
+}
+
+export function HealthHeartIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      <polyline points="7.5 12 10 12 11.5 9 12.5 15 14 12 16.5 12" />
+    </svg>
+  );
+}
+
+export function ScaleOfJusticeIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="3" x2="12" y2="21" />
+      <polyline points="4 7 12 5 20 7" />
+      <path d="M2 13l2-6 2 6a2 2 0 0 1-4 0z" />
+      <path d="M18 13l2-6 2 6a2 2 0 0 1-4 0z" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+    </svg>
+  );
+}
+
+
+

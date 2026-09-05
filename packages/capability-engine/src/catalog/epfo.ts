@@ -127,3 +127,167 @@ export const EpfoTransferClaimCapability: CapabilityContract<
     },
   ],
 };
+
+export const EpfoDownloadPassbookCapability: CapabilityContract<
+  {
+    citizenId: string;
+    memberId: string;
+  },
+  any
+> = {
+  id: 'epfo.download_passbook',
+  version: '1.0.0',
+  domain: 'EMPLOYMENT',
+  humanName: 'Download EPFO Member Passbook',
+  description: 'Retrieves monthly employee/employer contribution ledger and annual statutory interest accrual.',
+  sideEffectClass: 'READ_ONLY',
+  requiresHumanAuthorization: false,
+  inputSchema: z.object({
+    citizenId: z.string(),
+    memberId: z.string(),
+  }),
+  outputSchema: z.object({
+    memberId: z.string(),
+    uan: z.string(),
+    establishmentName: z.string(),
+    totalPfBalanceInr: z.number(),
+    pensionBalanceInr: z.number(),
+    interestRatePercent: z.number(),
+    lastContributionMonth: z.string(),
+    monthlyBreakdown: z.array(
+      z.object({
+        month: z.string(),
+        employeeShare: z.number(),
+        employerShare: z.number(),
+        pensionShare: z.number(),
+      })
+    ),
+    generatedAt: z.string(),
+    provenance: z.record(z.any()),
+  }),
+  execute: async (input) => {
+    return epfoAdapter.downloadPassbook(input.citizenId, input.memberId);
+  },
+  provenanceGenerator: (input, output) => [
+    {
+      entityType: 'EPFO_PASSBOOK',
+      entityId: input.memberId,
+      sourceType: 'FACT',
+      sourceAuthority: "Employees' Provident Fund Organisation (EPFO)",
+      confidence: 100,
+    },
+  ],
+};
+
+export const EpfoUpdateKycPanCapability: CapabilityContract<
+  {
+    citizenId: string;
+    panNumber: string;
+  },
+  any
+> = {
+  id: 'epfo.update_kyc_pan',
+  version: '1.0.0',
+  domain: 'EMPLOYMENT',
+  humanName: 'Seed Verified PAN into EPFO UAN Profile',
+  description: 'Seeds verified Income Tax PAN into EPFO member profile to prevent TDS deduction on withdrawals.',
+  sideEffectClass: 'COMPENSATABLE',
+  requiresHumanAuthorization: true,
+  requiredPermissions: ['EPFO_KYC_UPDATE', 'TAX_IDENTITY_LINK'],
+  inputSchema: z.object({
+    citizenId: z.string(),
+    panNumber: z.string().min(10),
+  }),
+  outputSchema: z.object({
+    panNumberMasked: z.string(),
+    seedingStatus: z.string(),
+    seededAt: z.string(),
+    uanLinked: z.boolean(),
+    provenance: z.record(z.any()),
+  }),
+  execute: async (input) => {
+    return epfoAdapter.updateKycPan(input.citizenId, input.panNumber);
+  },
+  compensate: async (input) => {
+    // Reversal logic for unlinking PAN
+  },
+  provenanceGenerator: (input, output) => [
+    {
+      entityType: 'EPFO_PAN_SEEDING',
+      entityId: input.citizenId,
+      sourceType: 'FACT',
+      sourceAuthority: "Employees' Provident Fund Organisation (EPFO)",
+      confidence: 100,
+    },
+  ],
+};
+
+export const EpfoGenerateUanCardCapability: CapabilityContract<any, any> = {
+  id: 'epfo.generate_uan_card',
+  version: '1.0.0',
+  domain: 'EMPLOYMENT',
+  humanName: 'Generate Official EPFO UAN Card',
+  description: 'Issues authoritative EPFO Universal Account Number card with secure QR verification code.',
+  sideEffectClass: 'READ_ONLY',
+  requiresHumanAuthorization: false,
+  inputSchema: z.object({
+    citizenId: z.string(),
+    uan: z.string().min(10),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    uan: z.string(),
+    holderName: z.string(),
+    qrCodePayload: z.string(),
+    issuanceDate: z.string(),
+    message: z.string(),
+  }),
+  execute: async (input) => {
+    return epfoAdapter.generateUanCard(input);
+  },
+  provenanceGenerator: (input, output) => [
+    {
+      entityType: 'EPFO_UAN_CARD',
+      entityId: output.uan,
+      sourceType: 'FACT',
+      sourceAuthority: "Employees' Provident Fund Organisation (EPFO)",
+      confidence: 100,
+    },
+  ],
+};
+
+export const EpfoInquirePensionStatusCapability: CapabilityContract<any, any> = {
+  id: 'epfo.inquire_pension_status',
+  version: '1.0.0',
+  domain: 'EMPLOYMENT',
+  humanName: 'Inquire EPS-95 Pension Eligibility & Annuity',
+  description: 'Calculates pensionable service years, statutory vesting status, and projected monthly annuity under EPS-95.',
+  sideEffectClass: 'READ_ONLY',
+  requiresHumanAuthorization: false,
+  inputSchema: z.object({
+    citizenId: z.string(),
+    uan: z.string().min(10),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    uan: z.string(),
+    pensionableServiceYears: z.number(),
+    eligibleForEps95: z.boolean(),
+    estimatedMonthlyPensionInr: z.number(),
+    pensionStatus: z.string(),
+    message: z.string(),
+  }),
+  execute: async (input) => {
+    return epfoAdapter.inquirePensionStatus(input);
+  },
+  provenanceGenerator: (input, output) => [
+    {
+      entityType: 'EPS95_PENSION_CALCULATION',
+      entityId: input.uan,
+      sourceType: 'FACT',
+      sourceAuthority: "Employees' Provident Fund Organisation (EPFO Pension Division)",
+      confidence: 100,
+    },
+  ],
+};
+

@@ -10,6 +10,7 @@ import {
   type DynamicWorkspaceContract,
   DynamicWorkspaceContractSchema,
 } from '@indra/contracts';
+import { ReviewManager } from './review/index.js';
 
 export interface StartWorkflowParams {
   workflowCode: string;
@@ -21,6 +22,7 @@ export interface ResumeWorkflowParams {
   workflowRunId: string;
   input?: Record<string, unknown>;
   authorize?: boolean;
+  authorizationToken?: string;
 }
 
 export class WorkflowRunner {
@@ -119,7 +121,17 @@ export class WorkflowRunner {
       ...(params.input || {}),
     };
 
-    if (params.authorize) {
+    if (params.authorizationToken) {
+      await ReviewManager.getInstance().verifyAndConsumeAuthorization(
+        params.workflowRunId,
+        currentRun.currentStepId || '',
+        currentRun.citizenId,
+        params.authorizationToken,
+        updatedContext
+      );
+      updatedContext.authorizationGranted = true;
+      updatedContext.authorizedAt = new Date().toISOString();
+    } else if (params.authorize) {
       updatedContext.authorizationGranted = true;
       updatedContext.authorizedAt = new Date().toISOString();
 
@@ -299,6 +311,13 @@ export class WorkflowRunner {
         .update(schema.workflowRuns)
         .set({ state: 'AWAITING_AUTHORIZATION', updatedAt: new Date() })
         .where(eq(schema.workflowRuns.id, workflowRunId));
+
+      // Ensure authoritative review session is pre-calculated and persisted
+      try {
+        await ReviewManager.getInstance().getOrCreateReviewSession(workflowRunId, run.citizenId, workflow);
+      } catch (reviewErr) {
+        console.warn('[WorkflowRunner] Auto-provisioning review session non-fatal warning:', reviewErr);
+      }
 
       await this.eventBus.publish({
         eventId: `EVT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,

@@ -30,6 +30,10 @@ export const CapabilityDomainSchema = z.enum([
   'EMERGENCY',
   'SECURITY',
   'COMMUNICATION',
+  'FINANCE',
+  'BANKING',
+  'FAMILY',
+  'ACCESSIBILITY',
 ]);
 
 export type CapabilityDomain = z.infer<typeof CapabilityDomainSchema>;
@@ -145,4 +149,7 @@ export interface CapabilityContract<TInput = unknown, TOutput = unknown> {
 
   // Provenance Generation
   provenanceGenerator?: (input: TInput, output: TOutput, ctx: ExecutionContext) => ProvenanceRecordPayload[];
+
+  // Universal Citizen Review Metadata (Platform Review Primitive)
+  reviewMetadata?: import('./review.js').CapabilityReviewMetadata<TInput>;
 }

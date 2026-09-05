@@ -1,117 +1,185 @@
-import React from 'react';
-import { LockIcon, ShieldCheckIcon, CheckIcon, AlertCircleIcon } from '../icons.js';
+import React, { useState } from 'react';
+import { LockIcon, ShieldCheckIcon, CheckIcon, AlertCircleIcon, FileTextIcon } from '../icons.js';
 
 interface DocumentVaultProps {
   documents: any[];
   onLaunchWorkflow: (workflowCode: string) => void;
 }
 
-export function DocumentVault({ documents, onLaunchWorkflow }: DocumentVaultProps) {
+export function DocumentVault({ documents = [], onLaunchWorkflow }: DocumentVaultProps) {
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+
+  const getCategoryFromType = (docType: string) => {
+    switch (docType) {
+      case 'AADHAAR_CARD':
+      case 'PASSPORT':
+        return 'IDENTITY';
+      case 'PAN_CARD':
+        return 'TAX';
+      case 'DRIVING_LICENCE':
+      case 'VEHICLE_RC':
+        return 'TRANSPORT';
+      case 'EPFO_UAN':
+        return 'SOCIAL_SECURITY';
+      default:
+        return 'OTHER';
+    }
+  };
+
+  const getCategoryBadge = (docType: string) => {
+    switch (docType) {
+      case 'AADHAAR_CARD':
+        return { label: 'National Identity', color: 'bg-slate-100 text-slate-800 border-slate-200' };
+      case 'PAN_CARD':
+        return { label: 'Tax & Corporate', color: 'bg-amber-50 text-amber-800 border-amber-200' };
+      case 'DRIVING_LICENCE':
+        return { label: 'Transport & Licensing', color: 'bg-blue-50 text-blue-800 border-blue-200' };
+      case 'EPFO_UAN':
+        return { label: 'Social Security (EPFO)', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
+      case 'PASSPORT':
+        return { label: 'Passport & Travel', color: 'bg-indigo-50 text-indigo-800 border-indigo-200' };
+      default:
+        return { label: 'Civil Credential', color: 'bg-slate-100 text-slate-700 border-slate-200' };
+    }
+  };
+
+  const filteredDocs = selectedCategory === 'ALL'
+    ? documents
+    : documents.filter((d) => getCategoryFromType(d.documentType) === selectedCategory);
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn pb-12">
-      <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+    <div className="w-full space-y-8 animate-fadeIn pb-16 pt-2">
+      {/* Vault Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E2E8F0] pb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#0F172A] tracking-tight">Verifiable Document Vault</h1>
-          <p className="text-xs text-[#64748B] mt-1">
-            Authoritative, cryptographically verified public identity records and credentials.
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-bold tracking-wider uppercase px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md">
+              Encrypted Citizen Vault
+            </span>
+            <span className="text-sm font-semibold text-[#64748B]">W3C Verifiable Credentials</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">
+            Verifiable Document Vault
+          </h1>
+          <p className="text-sm sm:text-base text-[#475569] mt-1.5 leading-relaxed max-w-3xl">
+            Authoritative, cryptographically verified public identity records, licenses, and statutory credentials synchronized directly from sovereign registries.
           </p>
         </div>
-        <div className="flex items-center space-x-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-          <ShieldCheckIcon className="w-3.5 h-3.5 text-emerald-600" />
+
+        <div className="flex items-center space-x-2 text-xs sm:text-sm font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl shrink-0 shadow-2xs">
+          <ShieldCheckIcon className="w-4 h-4 text-emerald-600" />
           <span>Legally Authoritative</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* AADHAAR */}
-        <div className="p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-wider uppercase text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-              NATIONAL IDENTITY
-            </span>
-            <span className="text-xs font-bold text-emerald-700 flex items-center">
-              <CheckIcon className="w-3 h-3 mr-1 text-emerald-600" />
-              Verified UIDAI
-            </span>
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-[#0F172A]">Aadhaar (Digital Card)</h3>
-            <p className="text-xs text-[#64748B] mono mt-0.5">XXXX-XXXX-9012</p>
-          </div>
-          <div className="pt-2 border-t border-[#F1F5F9] text-xs text-[#475569] space-y-1">
-            <div>Name: Priya Sharma</div>
-            <div>DOB: 1990-08-14 · Female</div>
-            <div>Address: Indiranagar, Bengaluru, KA - 560038</div>
-          </div>
-        </div>
-
-        {/* PAN */}
-        <div className="p-5 rounded-2xl bg-white border-2 border-amber-200 shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-wider uppercase text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-              TAX & CORPORATE
-            </span>
-            <span className="text-xs font-bold text-amber-700">
-              ⚠️ Discrepancy Flag
-            </span>
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-[#0F172A]">Permanent Account Number (PAN)</h3>
-            <p className="text-xs text-[#64748B] mono mt-0.5">ABCPS****F</p>
-          </div>
-          <div className="pt-2 border-t border-[#F1F5F9] text-xs text-[#475569] space-y-1">
-            <div>Holder Name: Priya S. (Mismatch with Aadhaar)</div>
-            <div>Jurisdiction: Ward 2(1), Bengaluru</div>
-            <button
-              onClick={() => onLaunchWorkflow('RESOLVE_NAME_MISMATCH')}
-              className="mt-2 text-xs font-bold text-[#0F172A] hover:underline flex items-center cursor-pointer"
-            >
-              <span>Harmonize PAN Name with Aadhaar →</span>
-            </button>
-          </div>
-        </div>
-
-        {/* DRIVING LICENCE */}
-        <div className="p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-wider uppercase text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-              TRANSPORT
-            </span>
-            <span className="text-xs font-bold text-emerald-700 flex items-center">
-              <CheckIcon className="w-3 h-3 mr-1 text-emerald-600" />
-              Valid until 2038
-            </span>
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-[#0F172A]">Driving Licence (DL)</h3>
-            <p className="text-xs text-[#64748B] mono mt-0.5">KA-01-2018-******</p>
-          </div>
-          <div className="pt-2 border-t border-[#F1F5F9] text-xs text-[#475569] space-y-1">
-            <div>RTO: Bengaluru Central (KA-01)</div>
-            <div>Vehicle Class: LMV / MCWG</div>
-          </div>
-        </div>
-
-        {/* EPFO UAN */}
-        <div className="p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-wider uppercase text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-              PROVIDENT FUND & SOCIAL SECURITY
-            </span>
-            <span className="text-xs font-bold text-sky-700">
-              Active Member
-            </span>
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-[#0F172A]">Universal Account Number (UAN)</h3>
-            <p className="text-xs text-[#64748B] mono mt-0.5">1014****1844</p>
-          </div>
-          <div className="pt-2 border-t border-[#F1F5F9] text-xs text-[#475569] space-y-1">
-            <div>Current Employer: InnoTech Solutions India Pvt Ltd</div>
-            <div>Linked Member IDs: 2 Accounts</div>
-          </div>
-        </div>
+      {/* Category Filter Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+        {[
+          { id: 'ALL', label: 'All Credentials' },
+          { id: 'IDENTITY', label: 'National Identity' },
+          { id: 'TAX', label: 'Tax & Revenue' },
+          { id: 'TRANSPORT', label: 'Transport' },
+          { id: 'SOCIAL_SECURITY', label: 'Social Security' },
+        ].map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategory(cat.id)}
+            className={`px-4 py-2 text-sm font-semibold rounded-xl border transition cursor-pointer shrink-0 ${
+              selectedCategory === cat.id
+                ? 'bg-[#0F172A] border-[#0F172A] text-white shadow-xs'
+                : 'bg-white border-[#CBD5E1] hover:bg-[#F8FAFC] text-[#475569] hover:border-[#94A3B8]'
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
       </div>
+
+      {/* Dynamic Documents Grid */}
+      {filteredDocs.length === 0 ? (
+        <div className="text-center py-16 bg-white border border-[#CBD5E1] rounded-2xl shadow-xs">
+          <FileTextIcon className="w-8 h-8 text-[#94A3B8] mx-auto mb-3" />
+          <p className="text-base font-bold text-[#0F172A]">No credentials found in this category</p>
+          <p className="text-sm text-[#64748B] mt-1">Select another filter or synchronize from the main dashboard.</p>
+        </div>
+      ) : (
+        <div className="grid items-start grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredDocs.map((doc: any) => {
+            const badge = getCategoryBadge(doc.documentType);
+            const isPanMismatch = doc.documentType === 'PAN_CARD' && doc.documentNumber?.includes('ABCPS');
+
+            return (
+              <div
+                key={doc.id || doc.documentNumber}
+                className={`p-6 rounded-2xl bg-white border transition shadow-xs flex flex-col justify-between space-y-4 ${
+                  isPanMismatch ? 'border-2 border-amber-300' : 'border-[#CBD5E1] hover:border-[#94A3B8]'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`text-xs font-bold tracking-wider uppercase px-2.5 py-1 rounded-md border ${badge.color}`}>
+                      {badge.label}
+                    </span>
+
+                    {isPanMismatch ? (
+                      <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded flex items-center">
+                        <AlertCircleIcon className="w-3.5 h-3.5 mr-1 text-amber-600" />
+                        Discrepancy
+                      </span>
+                    ) : (
+                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded flex items-center">
+                        <CheckIcon className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                        Verified
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-bold text-[#0F172A]">{doc.title}</h3>
+                    <p className="text-sm font-mono font-semibold text-[#64748B] mt-1">
+                      {doc.documentNumber}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 mt-3 border-t border-[#F1F5F9] text-sm text-[#475569] space-y-1.5">
+                    <div>
+                      <span className="text-xs text-[#64748B] font-medium block">Issuing Authority:</span>
+                      <span className="font-semibold text-[#0F172A]">{doc.issuer}</span>
+                    </div>
+
+                    {doc.issueDate && (
+                      <div className="flex items-center justify-between text-xs pt-1 text-[#64748B]">
+                        <span>Issued: <strong className="text-[#0F172A]">{doc.issueDate}</strong></span>
+                        {doc.expiryDate && (
+                          <span>Valid Thru: <strong className="text-[#0F172A]">{doc.expiryDate}</strong></span>
+                        )}
+                      </div>
+                    )}
+
+                    {doc.provenanceId && (
+                      <div className="text-xs text-[#94A3B8] font-mono pt-1 truncate">
+                        Prov: {doc.provenanceId}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Specific Action Link (e.g. Mismatch Resolution) */}
+                {isPanMismatch && (
+                  <div className="pt-3 border-t border-amber-100">
+                    <button
+                      onClick={() => onLaunchWorkflow('RESOLVE_NAME_MISMATCH')}
+                      className="w-full py-2 px-3 text-xs font-bold bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 rounded-xl transition cursor-pointer flex items-center justify-center space-x-1"
+                    >
+                      <span>Harmonize PAN Name with Aadhaar →</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

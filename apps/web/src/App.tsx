@@ -6,6 +6,11 @@ import { DynamicWorkspaceRenderer } from './components/workspace/DynamicWorkspac
 import { GovernmentInbox } from './components/inbox/GovernmentInbox.js';
 import { DocumentVault } from './components/vault/DocumentVault.js';
 import { TrustPrivacy } from './components/trust/TrustPrivacy.js';
+import { WorldModelInspector } from './components/world-model/WorldModelInspector.js';
+import { ActionPlanViewer } from './components/action-plans/ActionPlanViewer.js';
+import { ProactiveFindingsBanner } from './components/action-plans/ProactiveFindingsBanner.js';
+import { CloseIcon } from './components/icons.js';
+
 import {
   fetchCitizenProfile,
   fetchInbox,
@@ -21,7 +26,23 @@ import {
 } from './api.js';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<NavTab>('home');
+  const [activeTab, setActiveTab] = useState<NavTab>(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '');
+      if (['home', 'world-model', 'action-plans', 'inbox', 'vault', 'trust'].includes(hash)) {
+        return hash as NavTab;
+      }
+    }
+    return 'home';
+  });
+
+  const handleSelectTab = (tab: NavTab) => {
+    if (typeof window !== 'undefined') {
+      window.location.hash = tab;
+    }
+    setActiveTab(tab);
+    setActiveWorkflowRun(null);
+  };
   const [citizen, setCitizen] = useState<any>(null);
   const [availableCitizens, setAvailableCitizens] = useState<any[]>([]);
   const [inboxItems, setInboxItems] = useState<any[]>([]);
@@ -74,8 +95,19 @@ export function App() {
       }
     });
 
+    // Subscribe to hash changes for deep linking
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (['home', 'world-model', 'action-plans', 'inbox', 'vault', 'trust'].includes(hash)) {
+        setActiveTab(hash as NavTab);
+        setActiveWorkflowRun(null);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+
     return () => {
       unsubscribe();
+      window.removeEventListener('hashchange', handleHashChange);
     };
   }, [loadData]);
 
@@ -86,15 +118,18 @@ export function App() {
     loadData();
   };
 
+  const [appError, setAppError] = useState<string | null>(null);
+
   const handleLaunchWorkflow = async (
     workflowCode: string,
     initialContext?: Record<string, unknown>
   ) => {
     try {
+      setAppError(null);
       const run = await startWorkflow(workflowCode, initialContext);
       setActiveWorkflowRun(run);
     } catch (err: any) {
-      alert(`Failed to start action: ${err.message}`);
+      setAppError(`Unable to start action '${workflowCode}': ${err.message}`);
     }
   };
 
@@ -118,10 +153,7 @@ export function App() {
       {/* 1. CIVIC HEADER WITH SYNTHETIC DISCLOSURE & CITIZEN SWITCHER */}
       <Header
         activeTab={activeTab}
-        onSelectTab={(tab) => {
-          setActiveTab(tab);
-          setActiveWorkflowRun(null);
-        }}
+        onSelectTab={handleSelectTab}
         inboxUnreadCount={unreadCount}
         citizenName={citizen?.primaryName}
         citizenLocation={
@@ -135,7 +167,21 @@ export function App() {
       />
 
       {/* 2. MAIN APPLICATION CONTENT */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 space-y-4">
+        {appError && (
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs font-medium flex items-center justify-between animate-fadeIn">
+            <div className="flex items-center space-x-2">
+              <span className="font-bold">Notice:</span>
+              <span>{appError}</span>
+            </div>
+            <button
+              onClick={() => setAppError(null)}
+              className="text-rose-700 hover:text-rose-950 font-bold p-1 rounded cursor-pointer"
+            >
+              <CloseIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
         {isLoading ? (
           <div className="p-16 text-center text-xs text-[#64748B]">
             <div className="inline-block animate-spin w-6 h-6 border-2 border-[#0F172A] border-t-transparent rounded-full mb-3"></div>
@@ -157,8 +203,16 @@ export function App() {
                 citizen={citizen}
                 applications={applications}
                 onLaunchWorkflow={handleLaunchWorkflow}
-                onSelectTab={setActiveTab}
+                onSelectTab={handleSelectTab}
               />
+            )}
+
+            {activeTab === 'world-model' && (
+              <WorldModelInspector citizenId={citizen?.id} />
+            )}
+
+            {activeTab === 'action-plans' && (
+              <ActionPlanViewer citizen={citizen} />
             )}
 
             {activeTab === 'inbox' && (
@@ -187,15 +241,16 @@ export function App() {
 
       {/* 3. CIVIC FOOTER WITH SYNTHETIC ENVIRONMENT NOTICE */}
       <footer className="border-t border-[#E2E8F0] bg-white py-6 text-center text-xs text-[#94A3B8]">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="font-semibold text-[#64748B]">
             INDRA — Sovereign Citizen Operating Layer · Synthetic Evaluation Environment
           </div>
-          <div className="text-[11px] text-[#94A3B8]">
+          <div className="text-xs text-[#94A3B8]">
             Simulated public infrastructure demonstration. No live government databases are accessed or altered.
           </div>
         </div>
       </footer>
+
     </div>
   );
 }

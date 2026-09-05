@@ -286,6 +286,87 @@ You MUST output ONLY valid JSON conforming to this schema:
       };
     }
 
+    // 9. Tax & TRACES Cluster
+    if (query.includes('tax') || query.includes('itr') || query.includes('26as') || query.includes('tds')) {
+      return {
+        intentId: 'TRACES_TAX_STATUS',
+        domain: 'TAX',
+        suggestedWorkflowCode: undefined,
+        extractedEntities: {},
+        confidence: 0.93,
+        reasoningSummary: 'Citizen inquired regarding Income Tax returns, Form 26AS credits, or TDS deductions.',
+        clarificationRequired: false,
+      };
+    }
+
+    // 10. Vehicle & Transport Cluster
+    if (query.includes('vehicle') || query.includes('car') || query.includes('bike') || query.includes('scooter') || query.includes('vahan') || query.includes('rto')) {
+      return {
+        intentId: 'VAHAN_VEHICLE_RC',
+        domain: 'TRANSPORT',
+        suggestedWorkflowCode: undefined,
+        extractedEntities: {},
+        confidence: 0.93,
+        reasoningSummary: 'Citizen inquired regarding vehicle registration, RTO transfers, or driving licence status.',
+        clarificationRequired: false,
+      };
+    }
+
+    // 11. Judicial & Encumbrance Cluster
+    if (query.includes('court') || query.includes('ecourt') || query.includes('njdg') || query.includes('litigation') || query.includes('encumbrance') || query.includes('land dispute') || query.includes('property dispute')) {
+      return {
+
+        intentId: 'ECOURTS_CASE_STATUS',
+        domain: 'JUDICIARY',
+        suggestedWorkflowCode: undefined,
+        extractedEntities: {},
+        confidence: 0.92,
+        reasoningSummary: 'Citizen inquired regarding judicial case status, pending civil litigation, or title encumbrances.',
+        clarificationRequired: false,
+      };
+    }
+
+    // 12. Health & ABDM Cluster
+    if (query.includes('health') || query.includes('abha') || query.includes('abdm') || query.includes('hospital') || query.includes('medical')) {
+      return {
+        intentId: 'ABDM_HEALTH_RECORDS',
+        domain: 'HEALTHCARE',
+        suggestedWorkflowCode: undefined,
+        extractedEntities: {},
+        confidence: 0.93,
+        reasoningSummary: 'Citizen requested access to longitudinal health records or ABHA profile.',
+        clarificationRequired: false,
+      };
+    }
+
+    // 13. Banking & Account Aggregator Cluster
+    if (query.includes('bank') || query.includes('account aggregator') || query.includes('financial statement') || query.includes('hdfc') || query.includes('sbi')) {
+      return {
+        intentId: 'AA_BANK_STATEMENT',
+        domain: 'FINANCIAL',
+        suggestedWorkflowCode: undefined,
+        extractedEntities: {},
+        confidence: 0.92,
+        reasoningSummary: 'Citizen requested banking records or financial statements via Account Aggregator.',
+        clarificationRequired: false,
+      };
+    }
+
+    // 14. Academic & Education Cluster
+    if (query.includes('academic') || query.includes('apaar') || query.includes('degree') || query.includes('credit') || query.includes('college') || query.includes('university') || query.includes('education')) {
+      return {
+        intentId: 'APAAR_ACADEMIC_RECORDS',
+        domain: 'EDUCATION',
+        suggestedWorkflowCode: undefined,
+        extractedEntities: {},
+        confidence: 0.93,
+        reasoningSummary: 'Citizen inquired regarding academic records, APAAR ID, or Academic Bank of Credits.',
+        clarificationRequired: false,
+      };
+    }
+
+
+
     // Fallback: Underspecified or General Inquiry
     return {
       intentId: 'GENERAL_INQUIRY',

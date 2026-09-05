@@ -31,6 +31,17 @@ export const ProvenanceSourceTypeSchema = z.enum([
 
 export type ProvenanceSourceType = z.infer<typeof ProvenanceSourceTypeSchema>;
 
+export const ProvenanceMetadataSchema = z.object({
+  source: z.string(),
+  authority: z.string(),
+  provenanceType: ProvenanceSourceTypeSchema,
+  verificationStatus: z.enum(['VERIFIED', 'SELF_DECLARED', 'INFERRED', 'DISCREPANT']),
+  lastVerifiedAt: z.string(),
+  confidence: z.number().min(0).max(100).nullable().optional(),
+});
+
+export type ProvenanceMetadata = z.infer<typeof ProvenanceMetadataSchema>;
+
 export const GovernmentInboxItemSchema = z.object({
   id: z.string(),
   citizenId: z.string(),

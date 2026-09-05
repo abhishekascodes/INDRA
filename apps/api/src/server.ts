@@ -3,16 +3,34 @@ import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import path from 'node:path';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { getDb, schema, seedDatabase, PRIYA_SHARMA_ID } from '@indra/database';
-import { eq, desc } from 'drizzle-orm';
-import { CapabilityRegistry, registerDefaultCapabilities } from '@indra/capability-engine';
-import { WorkflowRegistry, WorkflowRunner, registerDefaultWorkflows } from '@indra/workflow-engine';
+import { eq, desc, and } from 'drizzle-orm';
+import {
+  CapabilityRegistry,
+  CapabilityExecutor,
+  registerDefaultCapabilities,
+} from '@indra/capability-engine';
+import {
+  WorkflowRegistry,
+  WorkflowRunner,
+  ReviewManager,
+  registerDefaultWorkflows,
+} from '@indra/workflow-engine';
 import { IntentEngine } from '@indra/intent-engine';
 import { EventBus } from '@indra/event-bus';
-import { synthesizeRelocationImpact } from '@indra/policy-engine';
+import {
+  synthesizeRelocationImpact,
+  CitizenWorldModelService,
+  ActionPlanEngine,
+  ProactiveCitizenEngine,
+  ActionCenterService,
+} from '@indra/policy-engine';
+
 
 const intentEngine = new IntentEngine();
 const workflowRunner = new WorkflowRunner();
+const capabilityExecutor = new CapabilityExecutor();
 const eventBus = EventBus.getInstance();
 
 export function getAuthenticatedCitizenId(request: any): string {
@@ -35,6 +53,7 @@ export async function buildApp() {
   // Initialize registries and database
   registerDefaultCapabilities();
   registerDefaultWorkflows();
+  ActionPlanEngine.getInstance().setStepExecutor(capabilityExecutor);
   await seedDatabase();
 
   // 1. Health Check
@@ -129,6 +148,20 @@ export async function buildApp() {
       .orderBy(desc(schema.citizenDocuments.createdAt));
 
     return { documents: docs };
+  });
+
+  // 4b. Aggregated Citizen World Model (Scoped)
+  server.get('/api/citizen/world-model', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    try {
+      const worldModel = await CitizenWorldModelService.getInstance().getWorldModel(authCitizenId);
+      return { success: true, worldModel };
+    } catch (err: any) {
+      if (err.message?.includes('does not exist')) {
+        return reply.status(404).send({ error: err.message });
+      }
+      throw err;
+    }
   });
 
   // 5. Intent Understanding Endpoint (Async Dual-Path with LLM Fallback)
@@ -296,6 +329,543 @@ export async function buildApp() {
       return reply.status(500).send({ error: err?.message || 'Failed to resume workflow' });
     }
   });
+
+  // 8c. Get Active Review Session for Workflow Step
+  server.get<{ Params: { id: string } }>('/api/workflows/:id/review', async (request, reply) => {
+    const { id } = request.params;
+    const authCitizenId = getAuthenticatedCitizenId(request);
+
+    const existing = await workflowRunner.getWorkflowRun(id);
+    if (!existing) {
+      return reply.status(404).send({ error: 'Workflow run not found' });
+    }
+
+    if (existing.citizenId !== authCitizenId) {
+      return reply.status(403).send({ error: 'Forbidden: Access to workflow run denied' });
+    }
+
+    const workflow = WorkflowRegistry.getInstance().get(existing.workflowCode);
+    if (!workflow) {
+      return reply.status(404).send({ error: `Workflow '${existing.workflowCode}' not registered` });
+    }
+
+    try {
+      const reviewSession = await ReviewManager.getInstance().getOrCreateReviewSession(
+        id,
+        authCitizenId,
+        workflow
+      );
+      return reviewSession;
+    } catch (err: any) {
+      request.log.error(err);
+      return reply.status(500).send({ error: err?.message || 'Failed to retrieve review session' });
+    }
+  });
+
+  // 8d. Edit Review Session Field (Revalidation & Dependency Recomputation)
+  server.post<{
+    Params: { id: string };
+    Body: { reviewSessionId: string; fieldKey: string; newValue: any };
+  }>('/api/workflows/:id/review/edit', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { reviewSessionId, fieldKey, newValue } = request.body || {};
+
+    if (!reviewSessionId || !fieldKey) {
+      return reply.status(400).send({ error: 'reviewSessionId and fieldKey are required' });
+    }
+
+    try {
+      const updated = await ReviewManager.getInstance().editReviewField(
+        reviewSessionId,
+        authCitizenId,
+        fieldKey,
+        newValue
+      );
+      return updated;
+    } catch (err: any) {
+      if (err.message?.includes('not found')) {
+        return reply.status(404).send({ error: err.message });
+      }
+      if (err.message?.includes('Forbidden') || err.message?.includes('unauthorized')) {
+        return reply.status(403).send({ error: err.message });
+      }
+      return reply.status(400).send({ error: err?.message || 'Failed to edit review field' });
+    }
+  });
+
+  // 8e. Authorize Review Session (Generates Cryptographic Authorization Token)
+  server.post<{
+    Params: { id: string };
+    Body: { reviewSessionId: string; payloadHash: string; acceptedDeclarationIds?: string[] };
+  }>('/api/workflows/:id/authorize', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { reviewSessionId, payloadHash, acceptedDeclarationIds } = request.body || {};
+
+    if (!reviewSessionId || !payloadHash) {
+      return reply.status(400).send({ error: 'reviewSessionId and payloadHash are required' });
+    }
+
+    try {
+      const result = await ReviewManager.getInstance().authorizeReviewSession(
+        reviewSessionId,
+        authCitizenId,
+        payloadHash,
+        acceptedDeclarationIds || []
+      );
+      return result;
+    } catch (err: any) {
+      if (err.message?.includes('STALE_REVIEW_STATE')) {
+        return reply.status(409).send({ error: err.message, code: 'STALE_REVIEW_STATE' });
+      }
+      if (err.message?.includes('unauthorized') || err.message?.includes('Forbidden')) {
+        return reply.status(403).send({ error: err.message });
+      }
+      return reply.status(400).send({ error: err?.message || 'Authorization failed' });
+    }
+  });
+
+  // 8f. Execute Authorized Step (Verifies Payload Hash & Consumes Authorization Token)
+  server.post<{
+    Params: { id: string };
+    Body: { authorizationToken: string };
+  }>('/api/workflows/:id/execute', async (request, reply) => {
+    const { id } = request.params;
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { authorizationToken } = request.body || {};
+
+    if (!authorizationToken) {
+      return reply.status(400).send({ error: 'authorizationToken is required' });
+    }
+
+    const existing = await workflowRunner.getWorkflowRun(id);
+    if (!existing) {
+      return reply.status(404).send({ error: 'Workflow run not found' });
+    }
+
+    if (existing.citizenId !== authCitizenId) {
+      return reply.status(403).send({ error: 'Forbidden: Access to workflow run denied' });
+    }
+
+    try {
+      const summary = await workflowRunner.resumeWorkflow({
+        workflowRunId: id,
+        authorizationToken,
+      });
+      return summary;
+    } catch (err: any) {
+      if (err.message?.includes('STALE_REVIEW_STATE')) {
+        return reply.status(409).send({ error: err.message, code: 'STALE_REVIEW_STATE' });
+      }
+      if (err.message?.includes('INVALID_TOKEN') || err.message?.includes('TOKEN_EXPIRED')) {
+        return reply.status(401).send({ error: err.message, code: 'INVALID_TOKEN' });
+      }
+      if (err.message?.includes('Forbidden') || err.message?.includes('unauthorized')) {
+        return reply.status(403).send({ error: err.message });
+      }
+      return reply.status(400).send({ error: err?.message || 'Execution failed' });
+    }
+  });
+
+  // 8g. Capabilities Catalog (Universe Inspection)
+  server.get('/api/capabilities', async () => {
+    const registry = CapabilityRegistry.getInstance();
+    const list = registry.getAll().map((c) => ({
+      id: c.id,
+      version: c.version,
+      domain: c.domain,
+      humanName: c.humanName,
+      description: c.description,
+      sideEffectClass: c.sideEffectClass,
+      requiresHumanAuthorization: c.requiresHumanAuthorization,
+      requiredPermissions: c.requiredPermissions || [],
+    }));
+    return { count: list.length, capabilities: list };
+  });
+
+  // 8c. Execute Capability Directly (Scoped with Safety Boundaries)
+  server.post<{
+    Body: { capabilityId: string; input: Record<string, unknown>; authorize?: boolean };
+  }>('/api/capabilities/execute', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { capabilityId, input, authorize } = request.body || {};
+
+    if (!capabilityId) {
+      return reply.status(400).send({ error: 'capabilityId is required' });
+    }
+
+    const result = await capabilityExecutor.execute({
+      capabilityId,
+      input: { ...input, citizenId: authCitizenId },
+      context: {
+        citizenId: authCitizenId,
+        authorizationGranted: authorize ?? false,
+      },
+    });
+
+    if (!result.success) {
+      return reply.status(400).send({ error: result.error });
+    }
+
+    return result;
+  });
+
+  // 8d. Action Plans - List for Citizen
+  server.get('/api/citizen/action-plans', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const plans = await ActionPlanEngine.getInstance().listActionPlans(authCitizenId);
+    return { count: plans.length, plans };
+  });
+
+  // 8e. Action Plans - Get Plan Detail by ID
+  server.get<{ Params: { id: string } }>('/api/citizen/action-plans/:id', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+    try {
+      const plan = await ActionPlanEngine.getInstance().getActionPlan(id, authCitizenId);
+      if (!plan) {
+        return reply.status(404).send({ error: 'Action plan not found' });
+      }
+      return { success: true, plan };
+    } catch (err: any) {
+      return reply.status(403).send({ error: err?.message || 'Access denied' });
+    }
+  });
+
+  // 8f. Action Plans - Generate Plan for Life Event
+  server.post<{
+    Body: {
+      lifeEventCode: string;
+      context?: Record<string, unknown>;
+      omittedStepKeys?: string[];
+      forceRecreate?: boolean;
+    };
+  }>('/api/citizen/action-plans/generate', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { lifeEventCode, context, omittedStepKeys, forceRecreate } = request.body || {};
+
+    if (!lifeEventCode) {
+      return reply.status(400).send({ error: 'lifeEventCode is required' });
+    }
+
+    try {
+      const plan = await ActionPlanEngine.getInstance().generateActionPlan(
+        authCitizenId,
+        lifeEventCode as any,
+        context || {},
+        { omittedStepKeys, forceRecreate }
+      );
+      return { success: true, plan };
+    } catch (err: any) {
+      return reply.status(400).send({ error: err?.message || 'Failed to generate action plan' });
+    }
+  });
+
+  // 8g. Action Plans - Execute Step
+  server.post<{
+    Params: { id: string };
+    Body: { stepKey: string; authorize?: boolean; overrideInput?: Record<string, unknown> };
+  }>('/api/citizen/action-plans/:id/execute-step', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+    const { stepKey, authorize, overrideInput } = request.body || {};
+
+    if (!stepKey) {
+      return reply.status(400).send({ error: 'stepKey is required' });
+    }
+
+    try {
+      const result = await ActionPlanEngine.getInstance().executeStep({
+        planId: id,
+        stepKey,
+        citizenId: authCitizenId,
+        authorize: authorize ?? false,
+        overrideInput,
+      });
+
+      if (!result.success) {
+        return reply.status(400).send({ error: result.error, plan: result.actionPlan, step: result.executedStep });
+      }
+
+      return result;
+    } catch (err: any) {
+      return reply.status(400).send({ error: err?.message || 'Failed to execute plan step' });
+    }
+  });
+
+  // 8h. Action Plans - Skip/Omit Step (Partial Plan Customization)
+  server.post<{
+    Params: { id: string };
+    Body: { stepKey: string; reason?: string };
+  }>('/api/citizen/action-plans/:id/skip-step', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+    const { stepKey, reason } = request.body || {};
+
+    if (!stepKey) {
+      return reply.status(400).send({ error: 'stepKey is required' });
+    }
+
+    try {
+      const result = await ActionPlanEngine.getInstance().skipStep({
+        planId: id,
+        stepKey,
+        citizenId: authCitizenId,
+        reason,
+      });
+      return result;
+    } catch (err: any) {
+      return reply.status(400).send({ error: err?.message || 'Failed to skip step' });
+    }
+  });
+
+  // 8i. Action Plans - Compensate/Rollback Plan
+  server.post<{
+    Params: { id: string };
+    Body: { reason?: string };
+  }>('/api/citizen/action-plans/:id/compensate', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+    const { reason } = request.body || {};
+
+    try {
+      const result = await ActionPlanEngine.getInstance().compensatePlan({
+        planId: id,
+        citizenId: authCitizenId,
+        reason: reason || 'Citizen requested plan rollback',
+      });
+      return result;
+    } catch (err: any) {
+      return reply.status(400).send({ error: err?.message || 'Failed to compensate plan' });
+    }
+  });
+
+  // 8h. Proactive Findings - List
+  server.get<{
+    Querystring: { status?: string; category?: string };
+  }>('/api/citizen/proactive-findings', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { status, category } = request.query || {};
+    const proactiveEngine = ProactiveCitizenEngine.getInstance();
+
+    await proactiveEngine.scanCitizen(authCitizenId, 'MANUAL_REFRESH');
+    const findings = await proactiveEngine.listFindings(authCitizenId, {
+      status: (status as any) || 'ACTIVE',
+      category: category as any,
+    });
+
+    const criticalCount = findings.filter((f) => f.urgency === 'CRITICAL').length;
+    const highCount = findings.filter((f) => f.urgency === 'HIGH').length;
+    const mediumCount = findings.filter((f) => f.urgency === 'MEDIUM').length;
+    const lowCount = findings.filter((f) => f.urgency === 'LOW').length;
+
+    return {
+      count: findings.length,
+      summary: { criticalCount, highCount, mediumCount, lowCount },
+      findings,
+    };
+  });
+
+  // Alias /api/citizen/proactive/findings
+  server.get<{
+    Querystring: { status?: string; category?: string };
+  }>('/api/citizen/proactive/findings', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { status, category } = request.query || {};
+    const proactiveEngine = ProactiveCitizenEngine.getInstance();
+
+    await proactiveEngine.scanCitizen(authCitizenId, 'MANUAL_REFRESH');
+    const findings = await proactiveEngine.listFindings(authCitizenId, {
+      status: (status as any) || 'ACTIVE',
+      category: category as any,
+    });
+
+    const criticalCount = findings.filter((f) => f.urgency === 'CRITICAL').length;
+    const highCount = findings.filter((f) => f.urgency === 'HIGH').length;
+    const mediumCount = findings.filter((f) => f.urgency === 'MEDIUM').length;
+    const lowCount = findings.filter((f) => f.urgency === 'LOW').length;
+
+    return {
+      count: findings.length,
+      summary: { criticalCount, highCount, mediumCount, lowCount },
+      findings,
+    };
+  });
+
+  // 8i. Proactive Findings - Dismiss
+  server.post<{
+    Params: { id: string };
+    Body: { reason?: string };
+  }>('/api/citizen/proactive-findings/:id/dismiss', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+    const { reason } = request.body || {};
+    const dismissed = await ProactiveCitizenEngine.getInstance().dismissFinding(id, authCitizenId, reason);
+    if (dismissed) {
+      eventBus.publish({
+        eventId: crypto.randomUUID(),
+        eventType: 'GOVERNMENT_INBOX_UPDATED',
+        citizenId: authCitizenId,
+        aggregateType: 'CITIZEN',
+        aggregateId: id,
+        payload: { findingId: id, action: 'DISMISSED' },
+        provenance: {
+          source: 'AUTOMATED_RULE',
+          correlationId: crypto.randomUUID(),
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+    return { success: dismissed };
+  });
+
+  // 8j. Proactive Findings - Snooze
+  server.post<{
+    Params: { id: string };
+    Body: { days?: number };
+  }>('/api/citizen/proactive-findings/:id/snooze', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+    const { days } = request.body || {};
+    const snoozed = await ProactiveCitizenEngine.getInstance().snoozeFinding(id, authCitizenId, days ?? 7);
+    if (snoozed) {
+      eventBus.publish({
+        eventId: crypto.randomUUID(),
+        eventType: 'GOVERNMENT_INBOX_UPDATED',
+        citizenId: authCitizenId,
+        aggregateType: 'CITIZEN',
+        aggregateId: id,
+        payload: { findingId: id, days: days ?? 7, action: 'SNOOZED' },
+        provenance: {
+          source: 'AUTOMATED_RULE',
+          correlationId: crypto.randomUUID(),
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+    return { success: snoozed };
+  });
+
+  // 8k. Proactive Findings - Manual Trigger Scan
+  server.post('/api/citizen/proactive-findings/scan', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const summary = await ProactiveCitizenEngine.getInstance().scanCitizen(authCitizenId, 'MANUAL_REFRESH');
+    eventBus.publish({
+      eventId: crypto.randomUUID(),
+      eventType: 'GOVERNMENT_INBOX_UPDATED',
+      citizenId: authCitizenId,
+      aggregateType: 'CITIZEN',
+      aggregateId: authCitizenId,
+      payload: { summary },
+      provenance: {
+        source: 'AUTOMATED_RULE',
+        correlationId: crypto.randomUUID(),
+      },
+      timestamp: new Date().toISOString(),
+    });
+    return summary;
+  });
+
+  // 8l. Proactive Findings - Launch Authoritative Action
+  server.post<{ Params: { id: string } }>(
+    '/api/citizen/proactive-findings/:id/launch',
+    async (request, reply) => {
+      const authCitizenId = getAuthenticatedCitizenId(request);
+      const { id } = request.params;
+      try {
+        const result = await ProactiveCitizenEngine.getInstance().launchFindingAction(
+          id,
+          authCitizenId
+        );
+        eventBus.publish({
+          eventId: crypto.randomUUID(),
+          eventType: 'GOVERNMENT_INBOX_UPDATED',
+          citizenId: authCitizenId,
+          aggregateType: 'CITIZEN',
+          aggregateId: id,
+          payload: { findingId: id, action: 'LAUNCHED', actionLink: result.actionLink },
+          provenance: {
+            source: 'AUTOMATED_RULE',
+            correlationId: crypto.randomUUID(),
+          },
+          timestamp: new Date().toISOString(),
+        });
+        return result;
+      } catch (err: any) {
+        return reply.status(400).send({ error: err?.message || 'Failed to launch finding action' });
+      }
+    }
+  );
+
+  // 8m. Action Center Feed (Phase 3.5)
+  server.get('/api/citizen/action-center', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    return ActionCenterService.getInstance().getActionCenterFeed(authCitizenId);
+  });
+
+  // 8n. Consent Artifacts - List (Phase 3.5)
+  server.get('/api/citizen/consent-artifacts', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const db = await getDb();
+    return db
+      .select()
+      .from(schema.consentArtifacts)
+      .where(eq(schema.consentArtifacts.citizenId, authCitizenId))
+      .orderBy(desc(schema.consentArtifacts.createdAt));
+  });
+
+  // 8o. Consent Artifacts - Revoke (Phase 3.5)
+  server.post<{ Params: { id: string } }>(
+    '/api/citizen/consent-artifacts/:id/revoke',
+    async (request, reply) => {
+      const authCitizenId = getAuthenticatedCitizenId(request);
+      const { id } = request.params;
+      const db = await getDb();
+
+      const existing = await db
+        .select()
+        .from(schema.consentArtifacts)
+        .where(
+          and(
+            eq(schema.consentArtifacts.id, id),
+            eq(schema.consentArtifacts.citizenId, authCitizenId)
+          )
+        );
+
+      if (existing.length === 0) {
+        return reply.status(404).send({ error: 'Consent artifact not found or unauthorized' });
+      }
+
+      await db
+        .update(schema.consentArtifacts)
+        .set({
+          status: 'REVOKED',
+          revokedAt: new Date(),
+        })
+        .where(eq(schema.consentArtifacts.id, id));
+
+      eventBus.publish({
+        eventId: crypto.randomUUID(),
+        eventType: 'GOVERNMENT_INBOX_UPDATED',
+        citizenId: authCitizenId,
+        aggregateType: 'CITIZEN',
+        aggregateId: id,
+        payload: { consentArtifactId: id, status: 'REVOKED' },
+        provenance: {
+          source: 'USER_ACTION',
+          correlationId: crypto.randomUUID(),
+        },
+        timestamp: new Date().toISOString(),
+      });
+
+
+      return {
+        success: true,
+        consentArtifactId: id,
+        status: 'REVOKED',
+        message: 'Consent artifact successfully revoked under DPDP Act provisions.',
+      };
+    }
+  );
 
   // 9. Server-Sent Events (SSE) Stream
   server.get('/api/events/stream', async (request, reply) => {

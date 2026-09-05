@@ -37,4 +37,8 @@ export class CapabilityRegistry {
       sideEffect: c.sideEffectClass,
     }));
   }
+
+  getAll(): CapabilityContract<any, any>[] {
+    return Array.from(this.capabilities.values());
+  }
 }

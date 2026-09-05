@@ -7,6 +7,13 @@ import type {
 } from '@indra/contracts';
 
 export * from './life-events.js';
+export * from './world-model-service.js';
+export * from './consequence-graph.js';
+export * from './action-plan-engine.js';
+export * from './proactive/index.js';
+export * from './universal-status.js';
+export * from './action-center.js';
+
 
 export class ConsentManager {
   async recordConsent(params: {

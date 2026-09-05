@@ -292,6 +292,101 @@ export async function seedDatabase(db: any = null) {
       isResolved: false,
     },
     ]);
+
+    // 10. Priya World Model: Relationships
+    await database.insert(schema.citizenRelationships).values({
+      citizenId: PRIYA_SHARMA_ID,
+      relationType: 'SPOUSE',
+      fullName: 'Vikram Sharma',
+      dateOfBirth: '1992-03-10',
+      isNomineeForEpfo: true,
+      isDependentForHealth: true,
+    });
+
+    // 11. Priya World Model: Vehicles (Ather 450X)
+    await database.insert(schema.citizenVehicles).values({
+      citizenId: PRIYA_SHARMA_ID,
+      registrationNumber: 'KA-01-EQ-4921',
+      chassisNumber: 'ME4JF5012NK094812',
+      vehicleClass: 'TWO_WHEELER',
+      makerModel: 'Ather 450X (Gen 3, Space Grey)',
+      rtoCode: 'KA-01',
+      state: 'Karnataka',
+      registrationDate: '2022-06-15',
+      fitnessValidUntil: '2037-06-14',
+      puccValidUntil: '2027-06-14',
+      hypothecatedTo: 'HDFC Bank Ltd',
+      status: 'ACTIVE',
+    });
+
+    // 12. Priya World Model: Properties (Flat 402, Shanti Heights)
+    await database.insert(schema.citizenProperties).values({
+      citizenId: PRIYA_SHARMA_ID,
+      propertyType: 'RESIDENTIAL_FLAT',
+      identifier: '114-W0124-9',
+      municipalBody: 'Bruhat Bengaluru Mahanagara Palike (BBMP)',
+      address: 'Flat 402, Shanti Heights, 12th Main, HAL 2nd Stage, Indiranagar, Bengaluru - 560038',
+      state: 'Karnataka',
+      annualTaxInr: 4200,
+      taxPaymentStatus: 'PAID',
+    });
+
+    // 13. Priya World Model: Employments
+    await database.insert(schema.citizenEmployments).values([
+      {
+        citizenId: PRIYA_SHARMA_ID,
+        employerName: 'TechSolutions Bengaluru Pvt Ltd',
+        designation: 'Senior Software Engineer',
+        uan: '100904523182',
+        memberId: 'KNBLR0049281000010928',
+        establishmentId: 'KNBLR0049281',
+        startDate: '2022-01-10',
+        isCurrent: true,
+      },
+      {
+        citizenId: PRIYA_SHARMA_ID,
+        employerName: 'Apex Systems Global Services',
+        designation: 'Software Engineer',
+        uan: '100904523182',
+        memberId: 'MHBAN0018274000004928',
+        establishmentId: 'MHBAN0018274',
+        startDate: '2019-06-01',
+        endDate: '2021-12-31',
+        isCurrent: false,
+      },
+    ]);
+
+    // 14. Priya World Model: Educations
+    await database.insert(schema.citizenEducations).values({
+      citizenId: PRIYA_SHARMA_ID,
+      degree: 'Bachelor of Engineering (B.E.)',
+      fieldOfStudy: 'Computer Science & Engineering',
+      institution: 'BMS College of Engineering, Bengaluru',
+      boardOrUniversity: 'Visvesvaraya Technological University (VTU Belagavi)',
+      passingYear: 2016,
+      rollNumber: '1BM12CS084',
+      apaarId: 'APAAR-2016-908124',
+    });
+
+    // 15. Priya World Model: Statutory Obligations
+    await database.insert(schema.citizenStatutoryObligations).values([
+      {
+        citizenId: PRIYA_SHARMA_ID,
+        obligationType: 'ITR_FILING',
+        title: 'Income Tax Return (ITR-1) for AY 2026-27',
+        authority: 'Income Tax Department (CPC Bengaluru)',
+        dueDate: '2026-07-31',
+        status: 'SATISFIED',
+      },
+      {
+        citizenId: PRIYA_SHARMA_ID,
+        obligationType: 'PROPERTY_TAX',
+        title: 'BBMP Urban Property Tax (FY 2026-27)',
+        authority: 'Bruhat Bengaluru Mahanagara Palike',
+        dueDate: '2026-04-30',
+        status: 'SATISFIED',
+      },
+    ]);
   }
 
   // 10. Seed Second Synthetic Citizen: Aarav Patel (Pune, Maharashtra)
@@ -389,6 +484,23 @@ export async function seedDatabase(db: any = null) {
     },
   ]);
 
+  // SPI Driving Licence (Aarav)
+  await database
+    .insert(schema.spiDrivingLicences)
+    .values({
+      licenceNumber: 'MH-12-2016-008192',
+      citizenId: AARAV_PATEL_ID,
+      holderName: 'Aarav Patel',
+      dob: '1991-03-22',
+      issuedDate: '2016-06-18',
+      validUntil: '2036-06-17',
+      bloodGroup: 'O+',
+      rtoCode: 'MH-12',
+      status: 'ACTIVE',
+      address: 'Flat 402, Kothrud Heights, Paud Road, Kothrud, Pune - 411038',
+    })
+    .onConflictDoNothing();
+
   await database.insert(schema.citizenDocuments).values([
     {
       citizenId: AARAV_PATEL_ID,
@@ -438,7 +550,316 @@ export async function seedDatabase(db: any = null) {
       isResolved: false,
     },
   ]);
+
+  // Aarav World Model: Relationships (Parent)
+  await database.insert(schema.citizenRelationships).values({
+    citizenId: AARAV_PATEL_ID,
+    relationType: 'PARENT',
+    fullName: 'Sunita Patel',
+    dateOfBirth: '1968-11-22',
+    isNomineeForEpfo: true,
+    isDependentForHealth: true,
+  });
+
+  // Aarav World Model: Vehicles -> INTENTIONALLY EMPTY! (Aarav owns no motor vehicles)
+
+  // Aarav World Model: Properties (Agricultural Land in Satara)
+  await database.insert(schema.citizenProperties).values({
+    citizenId: AARAV_PATEL_ID,
+    propertyType: 'AGRICULTURAL_LAND',
+    identifier: 'Gat No. 142/3',
+    municipalBody: 'Satara District Revenue Department',
+    address: 'Survey 142/3, Village Wai, Taluk Wai, District Satara - 412803',
+    state: 'Maharashtra',
+    annualTaxInr: 350,
+    taxPaymentStatus: 'PAID',
+  });
+
+  // Aarav World Model: Employments
+  await database.insert(schema.citizenEmployments).values({
+    citizenId: AARAV_PATEL_ID,
+    employerName: 'TechCorp India Pune Pvt Ltd',
+    designation: 'Senior Data Analyst',
+    uan: '101988219012',
+    memberId: 'MHPUN0098210000001824',
+    establishmentId: 'MHPUN0098210',
+    startDate: '2021-04-01',
+    isCurrent: true,
+  });
+
+  // Aarav World Model: Educations
+  await database.insert(schema.citizenEducations).values({
+    citizenId: AARAV_PATEL_ID,
+    degree: 'Bachelor of Science (B.Sc.)',
+    fieldOfStudy: 'Statistics',
+    institution: 'Fergusson College, Pune',
+    boardOrUniversity: 'Savitribai Phule Pune University',
+    passingYear: 2018,
+    rollNumber: 'PU-15-STAT-492',
+    apaarId: 'APAAR-2018-491028',
+  });
+
+  // Aarav World Model: Statutory Obligations
+  await database.insert(schema.citizenStatutoryObligations).values([
+    {
+      citizenId: AARAV_PATEL_ID,
+      obligationType: 'ITR_FILING',
+      title: 'Income Tax Return (ITR-2) for AY 2026-27',
+      authority: 'Income Tax Department (Pune Circle)',
+      dueDate: '2026-07-31',
+      status: 'PENDING',
+      penaltyInrPerDay: 50,
+    },
+    {
+      citizenId: AARAV_PATEL_ID,
+      obligationType: 'LAND_REVENUE',
+      title: 'Maharashtra Gram Panchayat Land Assessment',
+      authority: 'Satara Zilla Parishad',
+      dueDate: '2026-03-31',
+      status: 'SATISFIED',
+    },
+  ]);
+
+  // =========================================================================
+  // 17. PHASE 3.5: HEALTHCARE (ABDM) RECORDS
+  // =========================================================================
+  await database.insert(schema.citizenHealthRecords).values([
+    {
+      citizenId: PRIYA_SHARMA_ID,
+      abhaAddress: 'priya@abdm',
+      hipName: 'Fortis Hospital (Bannerghatta Road, Bengaluru)',
+      recordType: 'DISCHARGE_SUMMARY',
+      recordDate: '2025-11-20',
+      diagnosticSummary: 'Day-care arthroscopic ligament reconstruction. Post-op recovery normal. Full mobility restored.',
+      provenanceData: {
+        sourceAuthority: 'National Health Authority (ABDM Gateway)',
+        provenanceType: 'SYSTEM_OBSERVATION',
+        isSimulationAssumption: true,
+      },
+    },
+  ]);
+
+  // =========================================================================
+  // 18. PHASE 3.5: ACADEMIC (APAAR / ABC) RECORDS
+  // =========================================================================
+  await database.insert(schema.citizenAcademicRecords).values([
+    {
+      citizenId: PRIYA_SHARMA_ID,
+      apaarId: 'APAAR-560038-99124',
+      degreeName: 'Bachelor of Technology (Computer Science & Engineering)',
+      institutionName: 'PES University, Bengaluru',
+      yearOfPassing: '2016',
+      creditsTotal: 160,
+      gradeOrCgpa: '9.2 CGPA',
+      verificationStatus: 'VERIFIED',
+      provenanceData: {
+        sourceAuthority: 'Academic Bank of Credits (DigiLocker NAD)',
+        provenanceType: 'REGISTRY_FACT',
+        isSimulationAssumption: true,
+      },
+    },
+    {
+      citizenId: AARAV_PATEL_ID,
+      apaarId: 'APAAR-411005-77312',
+      degreeName: 'Bachelor of Science (Agriculture)',
+      institutionName: 'College of Agriculture, Pune',
+      yearOfPassing: '2018',
+      creditsTotal: 140,
+      gradeOrCgpa: '8.8 CGPA',
+      verificationStatus: 'VERIFIED',
+      provenanceData: {
+        sourceAuthority: 'Academic Bank of Credits (DigiLocker NAD)',
+        provenanceType: 'REGISTRY_FACT',
+        isSimulationAssumption: true,
+      },
+    },
+  ]);
+
+  // =========================================================================
+  // 19. PHASE 3.5: JUDICIARY (ECOURTS / NJDG) RECORDS
+  // =========================================================================
+  await database.insert(schema.citizenLegalRecords).values([
+    {
+      citizenId: AARAV_PATEL_ID,
+      cnrNumber: 'MHST02-001948-2024',
+      courtName: 'Court of Civil Judge Senior Division, Satara',
+      caseType: 'CIVIL_SUIT',
+      filingDate: '2024-02-15',
+      caseStatus: 'DISPOSED_CLEARANCE_ISSUED',
+      summary: 'Boundary demarcation verification suit between adjacent agricultural holders. Title confirmed in favor of Patel family. Zero encumbrance.',
+      relatedPropertyIdentifier: 'SURVEY-142/B-SATARA',
+      isEncumbrance: false,
+      provenanceData: {
+        sourceAuthority: 'e-Committee Supreme Court of India (NJDG)',
+        provenanceType: 'SYSTEM_OBSERVATION',
+        isSimulationAssumption: true,
+      },
+    },
+  ]);
+
+  // =========================================================================
+  // 20. PHASE 3.5: FINANCIAL INSTITUTION ACCOUNTS (RBI AA / FIP)
+  // =========================================================================
+  await database.insert(schema.citizenBankAccounts).values([
+    {
+      citizenId: PRIYA_SHARMA_ID,
+      fipId: 'FIP_HDFC_BANK',
+      bankName: 'HDFC Bank Ltd',
+      accountMasked: 'XXXX-4928',
+      accountType: 'SAVINGS',
+      ifscCode: 'HDFC0000053',
+      closingBalanceInr: 384250,
+      aggregateCreditsInr: 1250000,
+      aggregateDebitsInr: 865750,
+      verifiedTdsCount: 4,
+      statementPeriod: '2025-04-01 to 2026-03-31',
+      provenanceData: {
+        sourceAuthority: 'HDFC Bank Core Banking System (via Sahamati AA)',
+        provenanceType: 'EXTERNAL_SPI',
+        isSimulationAssumption: true,
+      },
+    },
+    {
+      citizenId: AARAV_PATEL_ID,
+      fipId: 'FIP_SBI',
+      bankName: 'State Bank of India',
+      accountMasked: 'XXXX-1102',
+      accountType: 'AGRICULTURE_SAVINGS',
+      ifscCode: 'SBIN0001248',
+      closingBalanceInr: 42100,
+      aggregateCreditsInr: 215000,
+      aggregateDebitsInr: 172900,
+      verifiedTdsCount: 0,
+      statementPeriod: '2025-04-01 to 2026-03-31',
+      provenanceData: {
+        sourceAuthority: 'State Bank of India Core Banking System (via Sahamati AA)',
+        provenanceType: 'EXTERNAL_SPI',
+        isSimulationAssumption: true,
+      },
+    },
+  ]);
+
+  // =========================================================================
+  // 21. WAVE 2: TRAFFIC E-CHALLANS (PARIVAHAN)
+  // =========================================================================
+  await database.insert(schema.spiTrafficChallans).values([
+    {
+      citizenId: PRIYA_SHARMA_ID,
+      vehicleRegNo: 'KA-01-MJ-5544',
+      challanNo: 'KA90124810294',
+      violationDate: '2026-02-18 11:42:00',
+      offense: 'Exceeding statutory speed limit (82 km/h in 60 km/h corridor)',
+      amountInr: 1000,
+      status: 'UNPAID',
+      location: 'Airport Elevated Corridor (NH-44), Bengaluru',
+      evidenceUrl: 'https://synthetic.parivahan.gov.in/evidence/KA90124810294.jpg',
+    },
+    {
+      citizenId: AARAV_PATEL_ID,
+      vehicleRegNo: 'MH-12-AB-1234',
+      challanNo: 'MH12093849102',
+      violationDate: '2025-11-04 16:15:00',
+      offense: 'Signal red light violation',
+      amountInr: 500,
+      status: 'PAID',
+      location: 'Shivajinagar Junction, Pune',
+      paidAt: new Date('2025-11-05T10:30:00Z'),
+    },
+  ]);
+
+  // =========================================================================
+  // 22. WAVE 2: RATION CARDS (NFSA / PDS)
+  // =========================================================================
+  await database.insert(schema.spiRationCards).values([
+    {
+      citizenId: AARAV_PATEL_ID,
+      rationCardNo: 'RC-MH-2021-998821',
+      schemeType: 'PHH',
+      membersCount: 4,
+      monthlyWheatKg: 15,
+      monthlyRiceKg: 10,
+      allocatedFpsName: 'Khadki Fair Price Shop #42, Pune Rural',
+      lastLiftedDate: '2026-02-05',
+      status: 'ACTIVE',
+    },
+  ]);
+
+  // =========================================================================
+  // 23. WAVE 2: CROP INSURANCE (PMFBY)
+  // =========================================================================
+  await database.insert(schema.spiCropInsurances).values([
+    {
+      citizenId: AARAV_PATEL_ID,
+      policyNumber: 'PMFBY-MH-KHARIF-2025-9981',
+      surveyNumber: '142/B',
+      season: 'KHARIF',
+      cropName: 'Onion & Pulses',
+      areaHectares: '1.42',
+      sumInsuredInr: 250000,
+      farmerPremiumInr: 5000,
+      governmentSubsidyInr: 20000,
+      status: 'ACTIVE',
+    },
+  ]);
+
+  // =========================================================================
+  // 24. WAVE 2: MUNICIPAL SERVICES (WATER & TRADE)
+  // =========================================================================
+  await database.insert(schema.spiMunicipalServices).values([
+    {
+      citizenId: PRIYA_SHARMA_ID,
+      serviceType: 'WATER_CONNECTION',
+      identifier: 'WTR-BLR-984421',
+      title: 'Domestic Piped Water Meter (15mm)',
+      propertyIdentifier: 'PID-BBMP-77218-E',
+      municipalBody: 'Bangalore Water Supply and Sewerage Board (BWSSB)',
+      status: 'ACTIVE',
+      metadata: { connectionType: 'DOMESTIC', meterSanctionedDate: '2023-08-10' },
+    },
+    {
+      citizenId: PRIYA_SHARMA_ID,
+      serviceType: 'TRADE_LICENSE',
+      identifier: 'TL-BBMP-2024-5510',
+      title: 'Shop & Commercial Establishment License',
+      propertyIdentifier: 'PID-BBMP-77218-E',
+      municipalBody: 'Bruhat Bengaluru Mahanagara Palike',
+      status: 'ACTIVE',
+      metadata: { tradeCategory: 'INFORMATION_TECHNOLOGY_SERVICES', validUntil: '2027-03-31' },
+    },
+  ]);
+
+  // =========================================================================
+  // 25. WAVE 2: POLICE CLEARANCE & GRIEVANCES
+  // =========================================================================
+  await database.insert(schema.spiPoliceClearances).values([
+    {
+      citizenId: PRIYA_SHARMA_ID,
+      recordType: 'PCC',
+      referenceNumber: 'PCC-BLR-2025-44910',
+      policeStation: 'Indiranagar Police Station, Bengaluru',
+      incidentOrPurpose: 'Police Clearance Certificate for Employment Overseas',
+      status: 'CLEARED',
+    },
+  ]);
+
+  // =========================================================================
+  // 26. WAVE 2: CYBERCRIME HELPLINE 1930 / I4C
+  // =========================================================================
+  await database.insert(schema.spiCyberComplaints).values([
+    {
+      citizenId: PRIYA_SHARMA_ID,
+      complaintAckNo: '1930-KA-2025-00918',
+      incidentDate: '2025-10-12',
+      fraudAmountInr: 5000,
+      suspectAccountOrPhone: '+91 99887 76655',
+      transactionRefNumber: 'UPI/9812480192',
+      assignedCyberCell: 'Cyber Crime Police Station, CID Bengaluru',
+      freezeRequestSentToBanks: true,
+      portal1930Status: 'FUNDS_RECOVERED_CLOSED',
+    },
+  ]);
   }
+
 
   console.log('[Seed] Seeding completed successfully!');
   return { citizenId: PRIYA_SHARMA_ID, secondaryCitizenId: AARAV_PATEL_ID };
