@@ -278,5 +278,43 @@ export class IdentitySpiAdapter {
       message: `Official UIDAI Masked Aadhaar and 16-digit Virtual ID generated for ${input.purpose || 'identity verification'}.`,
     };
   }
+
+  /**
+   * Authoritative cross-registry identity harmonization declaration.
+   * Resolves demographic discrepancies (such as legal name alias or parentage)
+   * between UIDAI National Identity ground truth and Sub-Registrar / Municipal deed records.
+   */
+  async harmonizeIdentityRecords(input: {
+    citizenId: string;
+    targetRegistry: string;
+    variantName: string;
+    authoritativeName: string;
+    supportingDocumentNumber?: string;
+  }) {
+    const db = await getDb();
+    const certNumber = `ID-HARM-${Date.now().toString().slice(-6)}-UID`;
+
+    await db.insert(schema.citizenDocuments).values({
+      citizenId: input.citizenId,
+      documentType: 'IDENTITY_HARMONIZATION_CERTIFICATE',
+      title: `Sovereign Identity Harmonization Declaration (${input.authoritativeName} / ${input.variantName})`,
+      issuer: 'Unique Identification Authority of India (UIDAI) & State Land Records Registry',
+      documentNumber: certNumber,
+      issueDate: new Date().toISOString().split('T')[0],
+      verificationStatus: 'VERIFIED',
+      provenanceId: certNumber,
+    });
+
+    return {
+      success: true,
+      harmonizationCertificateNumber: certNumber,
+      authoritativeName: input.authoritativeName,
+      variantName: input.variantName,
+      targetRegistry: input.targetRegistry,
+      status: 'HARMONIZED',
+      issuingAuthority: 'UIDAI & Department of Stamps and Registration',
+      message: `Demographic identity harmonization successfully recorded. Name variant '${input.variantName}' officially linked to verified sovereign ground truth '${input.authoritativeName}'.`,
+    };
+  }
 }
 

@@ -13,6 +13,8 @@ export * from './action-plan-engine.js';
 export * from './proactive/index.js';
 export * from './universal-status.js';
 export * from './action-center.js';
+export * from './contradiction-engine.js';
+export * from './reconciliation-engine.js';
 
 
 export class ConsentManager {

@@ -14,6 +14,7 @@
     "@indra/capability-engine": "workspace:*",
     "@indra/policy-engine": "workspace:*",
     "@indra/event-bus": "workspace:*",
+    "@indra/intent-engine": "workspace:*",
     "drizzle-orm": "^0.39.3"
   },
   "devDependencies": {

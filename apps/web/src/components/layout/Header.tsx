@@ -10,9 +10,10 @@ import {
   UserIcon,
   IndraEmblemIcon,
   CitizenAvatarIcon,
+  RefreshIcon,
 } from '../icons.js';
 
-export type NavTab = 'home' | 'world-model' | 'action-plans' | 'inbox' | 'vault' | 'trust';
+export type NavTab = 'home' | 'world-model' | 'action-plans' | 'transitions' | 'inbox' | 'vault' | 'trust';
 
 interface HeaderProps {
   activeTab: NavTab;
@@ -125,6 +126,18 @@ export function Header({
           >
             <AlertCircleIcon className="w-4 h-4" />
             <span>Action Plans</span>
+          </button>
+
+          <button
+            onClick={() => onSelectTab('transitions')}
+            className={`px-4 py-2 rounded-xl flex items-center space-x-2 transition cursor-pointer ${
+              activeTab === 'transitions'
+                ? 'text-[#0F172A] bg-[#F1F5F9] font-bold shadow-2xs'
+                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-gray-50'
+            }`}
+          >
+            <RefreshIcon className="w-4 h-4" />
+            <span>State Transitions</span>
           </button>
 
           <button

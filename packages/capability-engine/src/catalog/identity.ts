@@ -265,3 +265,48 @@ export const IdentityInquireMaskAadhaarCapability: CapabilityContract<any, any> 
     },
   ],
 };
+
+export const IdentityHarmonizeRecordsCapability: CapabilityContract<any, any> = {
+  id: 'identity.harmonize_records',
+  version: '1.0.0',
+  domain: 'IDENTITY',
+  humanName: 'Harmonize Legal Name Discrepancy Across Registries',
+  description: 'Issues authoritative identity declaration synchronizing legal name variants across civil, revenue, and statutory registries.',
+  sideEffectClass: 'COMPENSATABLE',
+  requiresHumanAuthorization: true,
+  humanAuthorizationPrompt: {
+    title: 'Authorize Sovereign Identity Harmonization',
+    summary: 'Reconcile demographic discrepancy between registered sale deed and verified national identity ground truth.',
+    consequencesNotice: 'Creates a permanent, verified identity cross-reference in the state registry allowing municipal property mutation.',
+    confirmationLabel: 'Authorize Identity Harmonization',
+  },
+  inputSchema: z.object({
+    citizenId: z.string(),
+    targetRegistry: z.string().default('Kaveri 2.0 / Bhoomi Revenue Department'),
+    variantName: z.string(),
+    authoritativeName: z.string(),
+    supportingDocumentNumber: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    harmonizationCertificateNumber: z.string(),
+    authoritativeName: z.string(),
+    variantName: z.string(),
+    targetRegistry: z.string(),
+    status: z.string(),
+    issuingAuthority: z.string(),
+    message: z.string(),
+  }),
+  execute: async (input) => {
+    return (identityAdapter as any).harmonizeIdentityRecords(input);
+  },
+  provenanceGenerator: (input, output) => [
+    {
+      entityType: 'IDENTITY_HARMONIZATION_CERTIFICATE',
+      entityId: output.harmonizationCertificateNumber,
+      sourceType: 'FACT',
+      sourceAuthority: output.issuingAuthority,
+      confidence: 100,
+    },
+  ],
+};

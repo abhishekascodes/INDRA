@@ -716,6 +716,37 @@ async function initSchema(client: PGlite) {
     ALTER TABLE review_sessions ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;
     ALTER TABLE review_sessions ADD COLUMN IF NOT EXISTS superseded_by_session_id UUID;
     ALTER TABLE review_sessions ADD COLUMN IF NOT EXISTS superseded_at TIMESTAMP;
+
+    CREATE TABLE IF NOT EXISTS citizen_state_transitions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+      initiating_query TEXT NOT NULL,
+      life_event_code VARCHAR(100) NOT NULL,
+      target_outcome TEXT NOT NULL,
+      state VARCHAR(50) NOT NULL DEFAULT 'ANALYZING',
+      current_step_key VARCHAR(100),
+      pre_transition_world_state JSONB NOT NULL DEFAULT '{}',
+      consequence_graph JSONB NOT NULL DEFAULT '{}',
+      contradictions JSONB NOT NULL DEFAULT '[]',
+      proposed_plan JSONB NOT NULL DEFAULT '{}',
+      review_session_id UUID,
+      authorization_token TEXT,
+      authorized_at TIMESTAMP,
+      execution_checkpoints JSONB NOT NULL DEFAULT '{}',
+      reconciliation_state JSONB,
+      final_outcome JSONB,
+      timeline JSONB NOT NULL DEFAULT '[]',
+      created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS synthetic_outage_config (
+      id VARCHAR(50) PRIMARY KEY,
+      fail_next_property_request BOOLEAN NOT NULL DEFAULT FALSE,
+      simulate_property_outage BOOLEAN NOT NULL DEFAULT FALSE,
+      inject_deed_contradiction BOOLEAN NOT NULL DEFAULT TRUE,
+      updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
   `);
 }
 

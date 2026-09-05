@@ -260,6 +260,9 @@ importers:
       '@indra/event-bus':
         specifier: workspace:*
         version: link:../event-bus
+      '@indra/intent-engine':
+        specifier: workspace:*
+        version: link:../intent-engine
       '@indra/policy-engine':
         specifier: workspace:*
         version: link:../policy-engine

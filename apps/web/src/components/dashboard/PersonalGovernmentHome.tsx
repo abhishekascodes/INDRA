@@ -19,6 +19,7 @@ import {
   LandParcelIcon,
   HealthHeartIcon,
   ScaleOfJusticeIcon,
+  RefreshIcon,
 } from '../icons.js';
 
 import { fetchRelocationImpact } from '../../api.js';
@@ -28,7 +29,7 @@ interface PersonalGovernmentHomeProps {
   citizen: any;
   applications: any[];
   onLaunchWorkflow: (workflowCode: string, initialContext?: Record<string, unknown>) => void;
-  onSelectTab: (tab: 'home' | 'world-model' | 'action-plans' | 'inbox' | 'vault' | 'trust') => void;
+  onSelectTab: (tab: 'home' | 'world-model' | 'action-plans' | 'transitions' | 'inbox' | 'vault' | 'trust') => void;
 }
 
 export function PersonalGovernmentHome({
@@ -302,6 +303,34 @@ export function PersonalGovernmentHome({
         onSelectActionPlan={() => onSelectTab('action-plans')}
         onSelectWorkflow={onLaunchWorkflow}
       />
+
+      {/* 4.5. CITIZEN STATE-TRANSITION ENGINE CALLOUT */}
+      <div className="p-5 rounded-2xl bg-white border border-[#CBD5E1] shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start space-x-3.5">
+          <div className="w-10 h-10 rounded-xl bg-[#0F172A] text-white flex items-center justify-center shrink-0">
+            <RefreshIcon className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h3 className="text-sm font-bold text-[#0F172A]">Citizen State-Transition Engine</h3>
+              <span className="px-2 py-0.5 rounded text-2xs font-bold bg-indigo-50 text-indigo-900 border border-indigo-200">
+                Cross-Institution Saga
+              </span>
+            </div>
+            <p className="text-xs text-[#64748B] mt-0.5 max-w-xl">
+              Execute complex civic life events with deterministic consequence graphs, contradiction detection, durable suspension upon institutional outages, and three-tier reconciliation.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onSelectTab('transitions')}
+          className="px-4 py-2.5 rounded-xl bg-[#0F172A] hover:bg-black text-white text-xs font-bold transition shadow-2xs shrink-0 cursor-pointer flex items-center space-x-2"
+        >
+          <span>Open Transitions Console</span>
+          <ArrowRightIcon className="w-3.5 h-3.5" />
+        </button>
+      </div>
 
       {/* 5. THINGS NEEDING ATTENTION */}
       <section>

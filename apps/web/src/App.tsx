@@ -6,6 +6,7 @@ import { DynamicWorkspaceRenderer } from './components/workspace/DynamicWorkspac
 import { GovernmentInbox } from './components/inbox/GovernmentInbox.js';
 import { DocumentVault } from './components/vault/DocumentVault.js';
 import { TrustPrivacy } from './components/trust/TrustPrivacy.js';
+import { CitizenTransitionConsole } from './components/transition/CitizenTransitionConsole.js';
 import { WorldModelInspector } from './components/world-model/WorldModelInspector.js';
 import { ActionPlanViewer } from './components/action-plans/ActionPlanViewer.js';
 import { ProactiveFindingsBanner } from './components/action-plans/ProactiveFindingsBanner.js';
@@ -30,7 +31,7 @@ export function App() {
   const [activeTab, setActiveTab] = useState<NavTab>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.replace('#', '');
-      if (['home', 'world-model', 'action-plans', 'inbox', 'vault', 'trust'].includes(hash)) {
+      if (['home', 'world-model', 'action-plans', 'transitions', 'inbox', 'vault', 'trust'].includes(hash)) {
         return hash as NavTab;
       }
     }
@@ -99,7 +100,7 @@ export function App() {
     // Subscribe to hash changes for deep linking
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (['home', 'world-model', 'action-plans', 'inbox', 'vault', 'trust'].includes(hash)) {
+      if (['home', 'world-model', 'action-plans', 'transitions', 'inbox', 'vault', 'trust'].includes(hash)) {
         setActiveTab(hash as NavTab);
         setActiveWorkflowRun(null);
       }
@@ -214,6 +215,13 @@ export function App() {
 
             {activeTab === 'action-plans' && (
               <ActionPlanViewer citizen={citizen} />
+            )}
+
+            {activeTab === 'transitions' && (
+              <CitizenTransitionConsole
+                citizen={citizen}
+                onRefreshCitizen={loadData}
+              />
             )}
 
             {activeTab === 'inbox' && (

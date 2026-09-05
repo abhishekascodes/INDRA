@@ -18,6 +18,7 @@ export const LifeEventCodeSchema = z.enum([
   'FARMER_SEASONAL_CYCLE',
   'DISASTER_EMERGENCY',
   'HEALTH_EVENT',
+  'RELOCATION_PROPERTY_ACQUISITION',
 ]);
 
 export type LifeEventCode = z.infer<typeof LifeEventCodeSchema>;

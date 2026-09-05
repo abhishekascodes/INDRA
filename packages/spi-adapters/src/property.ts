@@ -1,4 +1,4 @@
-import { getDb, schema, eq } from '@indra/database';
+import { getDb, schema, eq, and } from '@indra/database';
 
 export interface VerifyEncumbranceInput {
   citizenId: string;
@@ -65,12 +65,33 @@ export interface ApplyMutationOutput {
 
 export class PropertySpiAdapter {
   private static instance: PropertySpiAdapter | null = null;
+  private failNextRequest = false;
+  private simulateOutage = false;
+  private latencyMs = 0;
 
   public static getInstance(): PropertySpiAdapter {
     if (!PropertySpiAdapter.instance) {
       PropertySpiAdapter.instance = new PropertySpiAdapter();
     }
     return PropertySpiAdapter.instance;
+  }
+
+  public setSimulationMode(config: {
+    failNextRequest?: boolean;
+    simulateOutage?: boolean;
+    latencyMs?: number;
+  }) {
+    if (config.failNextRequest !== undefined) this.failNextRequest = config.failNextRequest;
+    if (config.simulateOutage !== undefined) this.simulateOutage = config.simulateOutage;
+    if (config.latencyMs !== undefined) this.latencyMs = config.latencyMs;
+  }
+
+  public getSimulationMode() {
+    return {
+      failNextRequest: this.failNextRequest,
+      simulateOutage: this.simulateOutage,
+      latencyMs: this.latencyMs,
+    };
   }
 
   /**
@@ -180,9 +201,81 @@ export class PropertySpiAdapter {
 
   /**
    * Applies for official title mutation following sale deed registration.
+   * Supports deterministic fault injection (outage simulation and forward recovery).
    */
   async applyMutation(input: ApplyMutationInput): Promise<ApplyMutationOutput> {
+    const db = await getDb();
+
+    // Check DB outage config if set
+    let isOutageSimulated = this.simulateOutage;
+    let isFailNext = this.failNextRequest;
+    try {
+      const configs = await db
+        .select()
+        .from(schema.syntheticOutageConfig)
+        .where(eq(schema.syntheticOutageConfig.id, 'GLOBAL_SIMULATION_CONFIG'));
+      if (configs.length > 0) {
+        if (configs[0].simulatePropertyOutage) isOutageSimulated = true;
+        if (configs[0].failNextPropertyRequest) isFailNext = true;
+      }
+    } catch {
+      // ignore
+    }
+
+    // 1. Induce deterministic failure if enabled
+    if (isOutageSimulated || isFailNext) {
+      if (isFailNext) {
+        this.failNextRequest = false;
+        try {
+          await db
+            .update(schema.syntheticOutageConfig)
+            .set({ failNextPropertyRequest: false })
+            .where(eq(schema.syntheticOutageConfig.id, 'GLOBAL_SIMULATION_CONFIG'));
+        } catch {
+          // ignore
+        }
+      }
+
+      throw new Error(
+        'INSTITUTIONAL_OUTAGE: Bhoomi / Kaveri Land Records Node 503 Gateway Timeout. Service temporarily unavailable (Database connection pool exhausted).'
+      );
+    }
+
+    // 2. Simulate latency if configured
+    if (this.latencyMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, this.latencyMs));
+    }
+
     const noticeNumber = `MUT-${Date.now().toString().slice(-6)}-REV`;
+
+    // 3. Persist authoritative institutional records in Synthetic Public Infrastructure
+    try {
+      await db.insert(schema.citizenProperties).values({
+        citizenId: input.citizenId,
+        propertyType: 'AGRICULTURAL_LAND',
+        identifier: input.propertyIdentifier,
+        municipalBody: 'Devanahalli Taluk Revenue Sub-Division (Bhoomi)',
+        address: `Survey No. ${input.propertyIdentifier}, Devanahalli Taluk, Bengaluru Rural - 562110`,
+        state: 'Karnataka',
+        annualTaxInr: 1250,
+        taxPaymentStatus: 'PAID',
+      });
+
+      await db.insert(schema.spiLandParcels).values({
+        citizenId: input.citizenId,
+        surveyNumber: input.propertyIdentifier,
+        state: 'Karnataka',
+        district: 'Bengaluru Rural',
+        taluk: 'Devanahalli',
+        village: 'Devanahalli Kasaba',
+        areaAcres: '1.25',
+        cropType: 'RESIDENTIAL_PLOT',
+        irrigationStatus: 'NON_IRRIGATED',
+        soilHealthIndex: 92,
+      });
+    } catch (persistErr) {
+      console.warn('[PropertySpiAdapter] Non-fatal note while recording mutation ledger:', persistErr);
+    }
 
     return {
       success: true,
@@ -193,7 +286,39 @@ export class PropertySpiAdapter {
       objectionPeriodDays: 30,
       expectedDisposalDays: 45,
       filingDate: new Date().toISOString().split('T')[0],
-      authority: 'Revenue Department / Tahsildar Office',
+      authority: 'Revenue Department / Tahsildar Office (Bhoomi Portal)',
+    };
+  }
+
+  /**
+   * Authoritative institutional lookup for post-transition reconciliation.
+   */
+  async getInstitutionalRecord(citizenId: string, propertyIdentifier: string) {
+    const db = await getDb();
+    const parcels = await db
+      .select()
+      .from(schema.spiLandParcels)
+      .where(
+        and(
+          eq(schema.spiLandParcels.citizenId, citizenId),
+          eq(schema.spiLandParcels.surveyNumber, propertyIdentifier)
+        )
+      );
+
+    const properties = await db
+      .select()
+      .from(schema.citizenProperties)
+      .where(
+        and(
+          eq(schema.citizenProperties.citizenId, citizenId),
+          eq(schema.citizenProperties.identifier, propertyIdentifier)
+        )
+      );
+
+    return {
+      parcel: parcels[0] || null,
+      property: properties[0] || null,
+      existsInStateRegistry: parcels.length > 0 || properties.length > 0,
     };
   }
 

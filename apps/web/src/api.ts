@@ -2,6 +2,7 @@ import type {
   WorkflowRunSummary,
   StructuredIntent,
   ReviewSessionContract,
+  CitizenStateTransition,
 } from '@indra/contracts';
 
 const API_BASE = '/api';
@@ -346,6 +347,144 @@ export async function executeAuthorizedStep(
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Execution failed' }));
     throw new Error(err.error || 'Execution failed');
+  }
+  return res.json();
+}
+
+// ==========================================
+// CITIZEN STATE-TRANSITION ENGINE
+// ==========================================
+
+export async function initiateTransition(
+  query: string,
+  context?: Record<string, unknown>
+): Promise<CitizenStateTransition> {
+  const res = await fetch(`${API_BASE}/transitions/initiate`, {
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ query, context }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to initiate transition' }));
+    throw new Error(err.error || 'Failed to initiate transition');
+  }
+  const data = await res.json();
+  return data.transition || data;
+}
+
+export async function fetchTransition(transitionId: string): Promise<CitizenStateTransition> {
+  const res = await fetch(`${API_BASE}/transitions/${transitionId}`, {
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to load transition' }));
+    throw new Error(err.error || 'Failed to load transition');
+  }
+  const data = await res.json();
+  return data.transition || data;
+}
+
+export async function fetchCitizenTransitions(): Promise<CitizenStateTransition[]> {
+  const res = await fetch(`${API_BASE}/citizen/transitions`, {
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to load transitions' }));
+    throw new Error(err.error || 'Failed to load transitions');
+  }
+  const data = await res.json();
+  return data.transitions || [];
+}
+
+export async function authorizeTransition(
+  transitionId: string,
+  authorizationToken?: string
+): Promise<CitizenStateTransition> {
+  const res = await fetch(`${API_BASE}/transitions/${transitionId}/authorize`, {
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ authorizationToken: authorizationToken || `AUTH-TOKEN-${Date.now()}` }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to authorize transition' }));
+    throw new Error(err.error || 'Failed to authorize transition');
+  }
+  const data = await res.json();
+  return data.transition || data;
+}
+
+export async function executeTransition(transitionId: string): Promise<CitizenStateTransition> {
+  const res = await fetch(`${API_BASE}/transitions/${transitionId}/execute`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to execute transition' }));
+    throw new Error(err.error || 'Failed to execute transition');
+  }
+  const data = await res.json();
+  return data.transition || data;
+}
+
+export async function resumeTransition(transitionId: string): Promise<CitizenStateTransition> {
+  const res = await fetch(`${API_BASE}/transitions/${transitionId}/resume`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to resume transition' }));
+    throw new Error(err.error || 'Failed to resume transition');
+  }
+  const data = await res.json();
+  return data.transition || data;
+}
+
+export async function resolveTransitionContradiction(
+  transitionId: string,
+  contradictionId: string,
+  action: 'RESOLVE' | 'DISMISS' = 'RESOLVE'
+): Promise<CitizenStateTransition> {
+  const res = await fetch(`${API_BASE}/transitions/${transitionId}/resolve-contradiction`, {
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ contradictionId, action }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to resolve contradiction' }));
+    throw new Error(err.error || 'Failed to resolve contradiction');
+  }
+  const data = await res.json();
+  return data.transition || data;
+}
+
+export async function setFaultSimulation(options: {
+  failNextPropertyRequest?: boolean;
+  simulatePropertyOutage?: boolean;
+  injectDeedContradiction?: boolean;
+}): Promise<{ success: boolean; simulationStatus: any }> {
+  const res = await fetch(`${API_BASE}/simulation/fault-injection`, {
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(options),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to set fault simulation' }));
+    throw new Error(err.error || 'Failed to set fault simulation');
+  }
+  return res.json();
+}
+
+export async function fetchFaultSimulationStatus(): Promise<{
+  simulatePropertyOutage: boolean;
+  failNextPropertyRequest: boolean;
+  injectDeedContradiction: boolean;
+}> {
+  const res = await fetch(`${API_BASE}/simulation/status`, {
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to fetch simulation status' }));
+    throw new Error(err.error || 'Failed to fetch simulation status');
   }
   return res.json();
 }

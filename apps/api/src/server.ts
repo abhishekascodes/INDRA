@@ -15,8 +15,10 @@ import {
   WorkflowRegistry,
   WorkflowRunner,
   ReviewManager,
+  TransitionExecutor,
   registerDefaultWorkflows,
 } from '@indra/workflow-engine';
+import { PropertySpiAdapter } from '@indra/spi-adapters';
 import { IntentEngine } from '@indra/intent-engine';
 import { EventBus } from '@indra/event-bus';
 import {
@@ -31,6 +33,8 @@ import {
 const intentEngine = new IntentEngine();
 const workflowRunner = new WorkflowRunner();
 const capabilityExecutor = new CapabilityExecutor();
+const transitionExecutor = TransitionExecutor.getInstance();
+const propertySpiAdapter = PropertySpiAdapter.getInstance();
 const eventBus = EventBus.getInstance();
 
 export function getAuthenticatedCitizenId(request: any): string {
@@ -866,6 +870,214 @@ export async function buildApp() {
       };
     }
   );
+
+  // =========================================================================
+  // CITIZEN STATE-TRANSITION ENGINE API
+  // =========================================================================
+
+  // 1. Initiate State Transition
+  server.post<{
+    Body: { query: string; context?: Record<string, any> };
+  }>('/api/transitions/initiate', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { query, context } = request.body || {};
+    if (!query) {
+      return reply.status(400).send({ error: 'Query is required to initiate state transition' });
+    }
+
+    try {
+      const transition = await transitionExecutor.initiateTransition({
+        citizenId: authCitizenId,
+        query,
+        context,
+      });
+      return { success: true, transition };
+    } catch (err: any) {
+      request.log.error(err);
+      return reply.status(500).send({ error: err?.message || 'Failed to initiate transition' });
+    }
+  });
+
+  // 2. Get State Transition
+  server.get<{ Params: { id: string } }>('/api/transitions/:id', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+    const transition = await transitionExecutor.getTransition(id, authCitizenId);
+    if (!transition) {
+      return reply.status(404).send({ error: 'State transition not found' });
+    }
+    return { success: true, transition };
+  });
+
+  // 3. List Citizen State Transitions
+  server.get('/api/citizen/transitions', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const transitions = await transitionExecutor.listTransitions(authCitizenId);
+    return { count: transitions.length, transitions };
+  });
+
+  // 4. Authorize Transition Plan
+  server.post<{
+    Params: { id: string };
+    Body: { token?: string };
+  }>('/api/transitions/:id/authorize', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+    const { token } = request.body || {};
+
+    try {
+      const updated = await transitionExecutor.authorizeTransition(id, authCitizenId, token);
+      return { success: true, transition: updated };
+    } catch (err: any) {
+      return reply.status(400).send({ error: err?.message || 'Failed to authorize transition' });
+    }
+  });
+
+  // 5. Execute Transition Loop
+  server.post<{ Params: { id: string } }>('/api/transitions/:id/execute', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+
+    try {
+      const updated = await transitionExecutor.executeTransitionLoop(id, authCitizenId);
+      return { success: true, transition: updated };
+    } catch (err: any) {
+      return reply.status(400).send({ error: err?.message || 'Failed to execute transition loop' });
+    }
+  });
+
+  // 6. Resume Suspended Transition
+  server.post<{ Params: { id: string } }>('/api/transitions/:id/resume', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+
+    try {
+      const updated = await transitionExecutor.resumeTransition(id, authCitizenId);
+      return { success: true, transition: updated };
+    } catch (err: any) {
+      return reply.status(400).send({ error: err?.message || 'Failed to resume transition' });
+    }
+  });
+
+  // 7. Resolve Contradiction
+  server.post<{
+    Params: { id: string };
+    Body: { contradictionId: string; action?: 'RESOLVE' | 'OVERRIDE' };
+  }>('/api/transitions/:id/resolve-contradiction', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+    const { contradictionId, action } = request.body || {};
+
+    if (!contradictionId) {
+      return reply.status(400).send({ error: 'contradictionId is required' });
+    }
+
+    try {
+      const updated = await transitionExecutor.resolveContradiction(
+        id,
+        authCitizenId,
+        contradictionId,
+        action || 'RESOLVE'
+      );
+      return { success: true, transition: updated };
+    } catch (err: any) {
+      return reply.status(400).send({ error: err?.message || 'Failed to resolve contradiction' });
+    }
+  });
+
+  // 8. Simulation Fault Injection Controls
+  server.post<{
+    Body: {
+      failNextPropertyRequest?: boolean;
+      simulatePropertyOutage?: boolean;
+      injectDeedContradiction?: boolean;
+      reset?: boolean;
+    };
+  }>('/api/simulation/fault-injection', async (request) => {
+    const { failNextPropertyRequest, simulatePropertyOutage, injectDeedContradiction, reset } =
+      request.body || {};
+
+    const db = await getDb();
+
+    let failNext = failNextPropertyRequest ?? false;
+    let simOutage = simulatePropertyOutage ?? false;
+    let injectContra = injectDeedContradiction ?? true;
+
+    if (reset) {
+      failNext = false;
+      simOutage = false;
+      injectContra = true;
+    }
+
+    propertySpiAdapter.setSimulationMode({
+      failNextRequest: failNext,
+      simulateOutage: simOutage,
+    });
+
+    try {
+      await db
+        .insert(schema.syntheticOutageConfig)
+        .values({
+          id: 'GLOBAL_SIMULATION_CONFIG',
+          failNextPropertyRequest: failNext,
+          simulatePropertyOutage: simOutage,
+          injectDeedContradiction: injectContra,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: schema.syntheticOutageConfig.id,
+          set: {
+            failNextPropertyRequest: failNext,
+            simulatePropertyOutage: simOutage,
+            injectDeedContradiction: injectContra,
+            updatedAt: new Date(),
+          },
+        });
+    } catch {
+      // ignore
+    }
+
+    return {
+      success: true,
+      simulationConfig: {
+        failNextPropertyRequest: failNext,
+        simulatePropertyOutage: simOutage,
+        injectDeedContradiction: injectContra,
+      },
+      message: reset
+        ? 'Simulation fault injection reset to baseline nominal state.'
+        : `Fault injection updated. Outage: ${simOutage}, FailNext: ${failNext}, Contradiction: ${injectContra}`,
+    };
+  });
+
+  // 9. Simulation Status
+  server.get('/api/simulation/status', async () => {
+    const mode = propertySpiAdapter.getSimulationMode();
+    const db = await getDb();
+    let injectContra = true;
+    try {
+      const configs = await db
+        .select()
+        .from(schema.syntheticOutageConfig)
+        .where(eq(schema.syntheticOutageConfig.id, 'GLOBAL_SIMULATION_CONFIG'));
+      if (configs.length > 0) {
+        injectContra = configs[0].injectDeedContradiction;
+      }
+    } catch {
+      // ignore
+    }
+
+    return {
+      failNextPropertyRequest: mode.failNextRequest,
+      simulatePropertyOutage: mode.simulateOutage,
+      injectDeedContradiction: injectContra,
+      status: mode.simulateOutage
+        ? 'OUTAGE_SIMULATED_ACTIVE'
+        : mode.failNextRequest
+        ? 'FAIL_NEXT_REQUEST_ARMED'
+        : 'NOMINAL',
+    };
+  });
 
   // 9. Server-Sent Events (SSE) Stream
   server.get('/api/events/stream', async (request, reply) => {

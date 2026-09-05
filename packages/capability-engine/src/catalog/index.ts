@@ -14,6 +14,7 @@ import {
   IdentityTransferVoterConstituencyCapability,
   IdentityLockBiometricsCapability,
   IdentityInquireMaskAadhaarCapability,
+  IdentityHarmonizeRecordsCapability,
 } from './identity.js';
 import {
   BusinessReserveNameCapability,
@@ -152,6 +153,7 @@ export function registerDefaultCapabilities(): void {
   registry.register(IdentityTransferVoterConstituencyCapability);
   registry.register(IdentityLockBiometricsCapability);
   registry.register(IdentityInquireMaskAadhaarCapability);
+  registry.register(IdentityHarmonizeRecordsCapability);
 
   // 3. Transport
   registry.register(TransportInquireVehicleRcCapability);

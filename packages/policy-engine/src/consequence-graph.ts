@@ -760,6 +760,154 @@ export const FARMER_SEASONAL_GRAPH: ConsequenceGraphDefinition = {
   ],
 };
 
+export const RELOCATION_PROPERTY_ACQUISITION_GRAPH: ConsequenceGraphDefinition = {
+  lifeEventCode: 'RELOCATION_PROPERTY_ACQUISITION',
+  title: 'Inter-Jurisdictional Relocation & Real Property Acquisition Cascade',
+  summaryTemplate: (wm, ctx) =>
+    `Statutory relocation from ${wm.profile.currentCity || 'Pune'} to Bengaluru and statutory acquisition of real property (Survey No. ${ctx.surveyNumber || '142/3'}, Devanahalli, Bengaluru) including cross-registry identity harmonization.`,
+  estimatedDays: 17,
+  stepTemplates: [
+    {
+      stepKey: 'update_aadhaar_address',
+      capabilityId: 'identity.update_aadhaar_address',
+      title: 'Update Aadhaar Residential Address',
+      authority: 'Unique Identification Authority of India (UIDAI)',
+      phaseIndex: 1,
+      dependencies: [],
+      executionMode: 'STATUTORY_AUTHORIZATION_REQUIRED',
+      estimatedDays: 2,
+      statutoryFeeInr: 50,
+      isApplicable: () => true,
+      deriveInput: (wm, ctx) => ({
+        citizenId: wm.profile.id,
+        newAddress: ctx.destinationAddress || ctx.newAddress || `Plot 42, Survey No. ${ctx.surveyNumber || '142/3'}, Devanahalli, Bengaluru`,
+        city: ctx.destinationCity || 'Bengaluru',
+        state: ctx.destinationState || 'Karnataka',
+        pincode: ctx.destinationPincode || '562110',
+      }),
+    },
+    {
+      stepKey: 'resolve_identity_discrepancy',
+      capabilityId: 'identity.harmonize_records',
+      title: 'Harmonize Legal Name Discrepancy Across Civil & Revenue Registries',
+      authority: 'UIDAI & Department of Stamps and Registration (Kaveri 2.0)',
+      phaseIndex: 1,
+      dependencies: [],
+      executionMode: 'STATUTORY_AUTHORIZATION_REQUIRED',
+      estimatedDays: 2,
+      statutoryFeeInr: 100,
+      isApplicable: () => true,
+      deriveInput: (wm, ctx) => ({
+        citizenId: wm.profile.id,
+        targetRegistry: 'Kaveri 2.0 / Bhoomi Land Records (Devanahalli SRO)',
+        variantName: ctx.deedTransfereeName || `${wm.profile.fullName.split(' ')[0]} Kumar Patel`,
+        authoritativeName: wm.profile.fullName,
+        supportingDocumentNumber: ctx.documentNumber || 'KA-BLR-DEV-2026-00481',
+      }),
+    },
+    {
+      stepKey: 'verify_encumbrance',
+      capabilityId: 'property.verify_encumbrance',
+      title: 'Inspect Registered Encumbrance (Form 15 Non-Encumbrance Certificate)',
+      authority: 'Department of Stamps and Registration (Kaveri 2.0)',
+      phaseIndex: 2,
+      dependencies: [],
+      executionMode: 'AUTOMATED_SAFE_READ',
+      estimatedDays: 1,
+      statutoryFeeInr: 100,
+      isApplicable: () => true,
+      deriveInput: (wm, ctx) => ({
+        citizenId: wm.profile.id,
+        propertyIdentifier: ctx.surveyNumber || '142/3',
+        searchYears: 15,
+      }),
+    },
+    {
+      stepKey: 'fetch_title_deed',
+      capabilityId: 'property.fetch_title_deed',
+      title: 'Retrieve Registered Parent Sale Deed from Sovereign Archive',
+      authority: 'Department of Stamps and Registration (Kaveri 2.0)',
+      phaseIndex: 2,
+      dependencies: ['verify_encumbrance'],
+      executionMode: 'AUTOMATED_SAFE_READ',
+      estimatedDays: 2,
+      statutoryFeeInr: 250,
+      isApplicable: () => true,
+      deriveInput: (wm, ctx) => ({
+        citizenId: wm.profile.id,
+        surveyNumber: ctx.surveyNumber || '142/3',
+        propertyIdentifier: ctx.surveyNumber || '142/3',
+        district: 'Bengaluru Rural',
+        taluk: 'Devanahalli',
+      }),
+    },
+    {
+      stepKey: 'apply_mutation',
+      capabilityId: 'property.apply_mutation',
+      title: 'Apply for Revenue Record Mutation & Record of Rights (Bhoomi RTC)',
+      authority: 'Revenue Department (Bhoomi / Tahsildar Office)',
+      phaseIndex: 3,
+      dependencies: ['fetch_title_deed', 'resolve_identity_discrepancy'],
+      executionMode: 'STATUTORY_AUTHORIZATION_REQUIRED',
+      estimatedDays: 7,
+      statutoryFeeInr: 500,
+      isApplicable: () => true,
+      deriveInput: (wm, ctx) => ({
+        citizenId: wm.profile.id,
+        propertyIdentifier: ctx.surveyNumber || '142/3',
+        registrationDeedNumber: ctx.documentNumber || 'KA-BLR-DEV-2026-00481',
+        transfereeName: wm.profile.fullName,
+      }),
+    },
+    {
+      stepKey: 'transfer_vehicle_rc',
+      capabilityId: 'transport.transfer_vehicle_rc',
+      title: 'Transfer Motor Vehicle Registration Jurisdiction (MoRTH Vahan)',
+      authority: 'Ministry of Road Transport and Highways (MoRTH Vahan)',
+      phaseIndex: 3,
+      dependencies: ['update_aadhaar_address'],
+      executionMode: 'STATUTORY_AUTHORIZATION_REQUIRED',
+      estimatedDays: 4,
+      statutoryFeeInr: 750,
+      isApplicable: (wm) => wm.vehicles.length > 0,
+      deriveInput: (wm, ctx) => ({
+        citizenId: wm.profile.id,
+        registrationNumber: wm.vehicles[0]?.registrationNumber || 'MH-12-DE-9102',
+        destinationState: ctx.destinationState || 'Karnataka',
+        destinationRto: ctx.destinationRto || 'KA-50 (Yelahanka / Devanahalli RTO)',
+        destinationAddress: ctx.destinationAddress || `Plot 42, Survey No. ${ctx.surveyNumber || '142/3'}, Devanahalli, Bengaluru`,
+      }),
+    },
+    {
+      stepKey: 'issue_residence_vc',
+      capabilityId: 'documents.issue_credential',
+      title: 'Issue Cryptographic Verifiable Residence Credential',
+      authority: 'INDRA Sovereign Digital Credentials Exchange',
+      phaseIndex: 4,
+      dependencies: ['update_aadhaar_address', 'apply_mutation'],
+      executionMode: 'STATUTORY_AUTHORIZATION_REQUIRED',
+      estimatedDays: 1,
+      statutoryFeeInr: 0,
+      isApplicable: () => true,
+      deriveInput: (wm, ctx) => ({
+        citizenId: wm.profile.id,
+        title: `Verifiable Resident & Landowner Credential (${ctx.destinationCity || 'Bengaluru'})`,
+        documentType: 'VERIFIABLE_RESIDENCE_ASSERTION',
+        issuer: 'INDRA Sovereign Trust Network',
+        documentNumber: `VRC-BLR-${Date.now().toString().slice(-6)}`,
+        payload: {
+          residentName: wm.profile.fullName,
+          city: ctx.destinationCity || 'Bengaluru',
+          state: ctx.destinationState || 'Karnataka',
+          surveyNumber: ctx.surveyNumber || '142/3',
+          taluk: 'Devanahalli',
+          verifiedAt: new Date().toISOString(),
+        },
+      }),
+    },
+  ],
+};
+
 export class ConsequenceGraphEngine {
   private static instance: ConsequenceGraphEngine | null = null;
   private graphs: Map<LifeEventCode, ConsequenceGraphDefinition> = new Map();
@@ -773,6 +921,7 @@ export class ConsequenceGraphEngine {
     this.registerGraph(CYBER_INCIDENT_GRAPH);
     this.registerGraph(JOB_LOSS_GRAPH);
     this.registerGraph(FARMER_SEASONAL_GRAPH);
+    this.registerGraph(RELOCATION_PROPERTY_ACQUISITION_GRAPH);
   }
 
   static getInstance(): ConsequenceGraphEngine {

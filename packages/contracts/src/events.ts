@@ -16,6 +16,9 @@ export const EventTypeSchema = z.enum([
   'PROACTIVE_DISCOVERY_FOUND',
   'INCONSISTENCY_FLAGGED',
   'GOVERNMENT_INBOX_UPDATED',
+  'CITIZEN_STATE_TRANSITION_INITIATED',
+  'CITIZEN_STATE_TRANSITION_SUSPENDED',
+  'CITIZEN_STATE_TRANSITION_COMPLETED',
 ]);
 
 export type EventType = z.infer<typeof EventTypeSchema>;
@@ -24,7 +27,7 @@ export const IndraDomainEventSchema = z.object({
   eventId: z.string(),
   eventType: EventTypeSchema,
   citizenId: z.string(),
-  aggregateType: z.enum(['WORKFLOW', 'APPLICATION', 'CITIZEN', 'PAYMENT', 'DOCUMENT', 'SPI']),
+  aggregateType: z.enum(['WORKFLOW', 'APPLICATION', 'CITIZEN', 'PAYMENT', 'DOCUMENT', 'SPI', 'CITIZEN_STATE_TRANSITION']),
   aggregateId: z.string(),
   payload: z.record(z.unknown()),
   timestamp: z.string(),

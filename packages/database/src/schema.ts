@@ -767,3 +767,40 @@ export const reviewSessions = pgTable('review_sessions', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// =========================================================================
+// CITIZEN STATE-TRANSITION ENGINE
+// =========================================================================
+
+export const citizenStateTransitions = pgTable('citizen_state_transitions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  citizenId: uuid('citizen_id')
+    .references(() => citizens.id, { onDelete: 'cascade' })
+    .notNull(),
+  initiatingQuery: text('initiating_query').notNull(),
+  lifeEventCode: varchar('life_event_code', { length: 100 }).notNull(),
+  targetOutcome: text('target_outcome').notNull(),
+  state: varchar('state', { length: 50 }).default('ANALYZING').notNull(),
+  currentStepKey: varchar('current_step_key', { length: 100 }),
+  preTransitionWorldState: jsonb('pre_transition_world_state').default({}).notNull(),
+  consequenceGraph: jsonb('consequence_graph').default({}).notNull(),
+  contradictions: jsonb('contradictions').default([]).notNull(),
+  proposedPlan: jsonb('proposed_plan').default({}).notNull(),
+  reviewSessionId: uuid('review_session_id'),
+  authorizationToken: text('authorization_token'),
+  authorizedAt: timestamp('authorized_at'),
+  executionCheckpoints: jsonb('execution_checkpoints').default({}).notNull(),
+  reconciliationState: jsonb('reconciliation_state'),
+  finalOutcome: jsonb('final_outcome'),
+  timeline: jsonb('timeline').default([]).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const syntheticOutageConfig = pgTable('synthetic_outage_config', {
+  id: varchar('id', { length: 50 }).primaryKey(),
+  failNextPropertyRequest: boolean('fail_next_property_request').default(false).notNull(),
+  simulatePropertyOutage: boolean('simulate_property_outage').default(false).notNull(),
+  injectDeedContradiction: boolean('inject_deed_contradiction').default(true).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});

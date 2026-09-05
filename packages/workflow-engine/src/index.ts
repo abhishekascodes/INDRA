@@ -8,4 +8,5 @@ export * from './definitions/resolve-mismatch.js';
 export * from './definitions/renew-passport.js';
 export * from './definitions/check-itr-status.js';
 export * from './review/index.js';
+export * from './transition-executor.js';
 
