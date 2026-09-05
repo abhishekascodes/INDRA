@@ -10,6 +10,7 @@ import { WorldModelInspector } from './components/world-model/WorldModelInspecto
 import { ActionPlanViewer } from './components/action-plans/ActionPlanViewer.js';
 import { ProactiveFindingsBanner } from './components/action-plans/ProactiveFindingsBanner.js';
 import { CloseIcon } from './components/icons.js';
+import { formatHumanLabel } from './utils/civicFormatters.js';
 
 import {
   fetchCitizenProfile,
@@ -129,7 +130,7 @@ export function App() {
       const run = await startWorkflow(workflowCode, initialContext);
       setActiveWorkflowRun(run);
     } catch (err: any) {
-      setAppError(`Unable to start action '${workflowCode}': ${err.message}`);
+      setAppError(`Unable to start action '${formatHumanLabel(workflowCode)}': ${err.message}`);
     }
   };
 

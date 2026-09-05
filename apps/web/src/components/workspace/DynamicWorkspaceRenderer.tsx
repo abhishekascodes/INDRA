@@ -13,6 +13,7 @@ import {
 import { resumeWorkflow } from '../../api.js';
 import { UniversalCitizenReviewConsole } from '../review/UniversalCitizenReviewConsole.js';
 import { CustomSelect } from '../common/CustomSelect.js';
+import { formatHumanLabel, formatStateLabel } from '../../utils/civicFormatters.js';
 
 interface DynamicWorkspaceRendererProps {
   workflowRun: WorkflowRunSummary;
@@ -74,16 +75,16 @@ export function DynamicWorkspaceRenderer({
           </button>
           <span>/</span>
           <span className="font-bold text-[#0F172A]">
-            {activeUI?.workspaceTitle || workflowRun.title || workflowRun.workflowCode}
+            {activeUI?.workspaceTitle || workflowRun.title || formatHumanLabel(workflowRun.workflowCode)}
           </span>
         </div>
 
         <div className="flex items-center space-x-2">
           <span className="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-100 text-slate-800 border border-slate-200">
-            {workflowRun.state.replace(/_/g, ' ')}
+            {formatStateLabel(workflowRun.state)}
           </span>
-          <span className="text-xs font-mono text-[#64748B]">
-            ID: {workflowRun.id.slice(0, 8)}
+          <span className="text-xs text-[#64748B] font-medium">
+            Session: {workflowRun.id.slice(0, 8)}
           </span>
         </div>
       </div>

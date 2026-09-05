@@ -10,6 +10,7 @@ import {
   ShieldCheckIcon,
 } from '../icons.js';
 import { resolveIntent } from '../../api.js';
+import { formatHumanLabel } from '../../utils/civicFormatters.js';
 
 interface UniversalIntentConsoleProps {
   onExecuteIntent: (intent: StructuredIntent) => void;
@@ -238,7 +239,7 @@ export function UniversalIntentConsole({
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-[#64748B]">I think you want to:</span>
             <span className="font-bold text-[#0F172A]">
-              {previewIntent.suggestedActionTitle || previewIntent.intentId.replace(/_/g, ' ')}
+              {previewIntent.suggestedActionTitle || formatHumanLabel(previewIntent.intentId)}
             </span>
             <span className="text-xs uppercase font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-md">
               {previewIntent.intentCategory || previewIntent.statutoryAuthority || 'CIVIC'}

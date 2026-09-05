@@ -7,6 +7,7 @@ import {
 } from '../../api.js';
 import type { ProactiveFinding } from '@indra/contracts';
 import { ShieldCheckIcon, AlertCircleIcon, ArrowRightIcon, CloseIcon } from '../icons.js';
+import { formatHumanLabel } from '../../utils/civicFormatters.js';
 
 
 interface ProactiveFindingsBannerProps {
@@ -119,7 +120,7 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
         <div className="flex gap-1.5 overflow-x-auto pb-1 text-xs">
           {['ALL', 'OBLIGATION_DEADLINE', 'CREDENTIAL_LIFECYCLE', 'DORMANT_ASSET', 'ANOMALY_CONTRADICTION', 'ELIGIBILITY_OPPORTUNITY'].map(
             (cat) => {
-              const label = cat === 'ALL' ? 'All Alerts' : cat.replace(/_/g, ' ');
+              const label = cat === 'ALL' ? 'All Alerts' : formatHumanLabel(cat);
               const count =
                 cat === 'ALL'
                   ? findings.length
@@ -185,7 +186,7 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
                     >
                       {finding.urgency}
                     </span>
-                    <span className="text-xs px-2.5 py-1 rounded bg-white text-[#64748B] border border-[#CBD5E1] font-mono font-semibold">
+                    <span className="text-xs px-2.5 py-1 rounded bg-white text-[#64748B] border border-[#CBD5E1] font-semibold">
                       Priority: {finding.priorityScore || 50}/100
                     </span>
                   </div>
@@ -300,10 +301,10 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
-                    {activeRationaleFinding.category.replace(/_/g, ' ')}
+                    {formatHumanLabel(activeRationaleFinding.category)}
                   </span>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
-                    Rule: {activeRationaleFinding.ruleCode}
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-md tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+                    {formatHumanLabel(activeRationaleFinding.ruleCode)}
                   </span>
                 </div>
                 <h3 className="text-xl font-extrabold text-[#0F172A]">

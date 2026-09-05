@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { InboxIcon, AlertCircleIcon, ArrowRightIcon, CheckIcon, ShieldCheckIcon } from '../icons.js';
 import { fetchActionCenterFeed, fetchConsentArtifacts, revokeConsentArtifact } from '../../api.js';
+import {
+  formatHumanLabel,
+  formatStateLabel,
+  formatProviderName,
+  formatPurposeName,
+} from '../../utils/civicFormatters.js';
 
 interface GovernmentInboxProps {
   inboxItems: any[];
@@ -145,11 +151,11 @@ export function GovernmentInbox({ inboxItems, onLaunchWorkflow }: GovernmentInbo
                         item.canonicalStatus
                       )}`}
                     >
-                      {item.canonicalStatus.replace(/_/g, ' ')}
+                      {formatStateLabel(item.canonicalStatus)}
                     </span>
                     {item.subtitle && (
                       <span className="text-xs font-semibold text-[#64748B]">
-                        {item.subtitle}
+                        {formatHumanLabel(item.subtitle)}
                       </span>
                     )}
                     {item.dueDate && (
@@ -181,7 +187,7 @@ export function GovernmentInbox({ inboxItems, onLaunchWorkflow }: GovernmentInbo
         </div>
       )}
 
-      {/* Tab 2: Consent Artifacts (DEPA / ABDM / AA) */}
+      {/* Tab 2: Sovereign Consent Artifacts (DPDP Act 2023) */}
       {activeTab === 'consents' && (
         <div className="space-y-4">
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-700">
@@ -192,12 +198,12 @@ export function GovernmentInbox({ inboxItems, onLaunchWorkflow }: GovernmentInbo
             consentArtifacts.map((c) => (
               <div
                 key={c.id}
-                className="p-6 rounded-2xl border border-[#CBD5E1] bg-white shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="p-6 rounded-2xl border border-[#CBD5E1] bg-white hover:border-[#94A3B8] transition shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div className="space-y-2 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider bg-purple-100 text-purple-900 border border-purple-300">
-                      {c.ecosystem}
+                      {formatHumanLabel(c.ecosystem)}
                     </span>
                     <span
                       className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider border ${
@@ -206,20 +212,20 @@ export function GovernmentInbox({ inboxItems, onLaunchWorkflow }: GovernmentInbo
                           : 'bg-rose-100 text-rose-900 border-rose-300'
                       }`}
                     >
-                      {c.status}
+                      {formatStateLabel(c.status)}
                     </span>
                     <span className="text-xs font-medium text-[#64748B]">
                       Expires: {new Date(c.expiresAt).toLocaleDateString()}
                     </span>
                   </div>
                   <h3 className="text-base font-bold text-[#0F172A]">
-                    Purpose: {c.purposeCode}
+                    Purpose: {formatPurposeName(c.purposeCode)}
                   </h3>
                   <p className="text-sm text-[#475569]">
-                    Provider: <span className="font-mono font-semibold">{c.dataProviderId}</span> → Consumer: <span className="font-mono font-semibold">{c.dataConsumerId}</span>
+                    Provider: <span className="font-semibold text-[#0F172A]">{formatProviderName(c.dataProviderId)}</span> → Consumer: <span className="font-semibold text-[#0F172A]">{formatProviderName(c.dataConsumerId)}</span>
                   </p>
-                  <p className="text-xs text-[#94A3B8] font-mono truncate">
-                    Signature Digest: {c.signatureDigest}
+                  <p className="text-xs text-[#94A3B8] truncate">
+                    Cryptographic Digest: {c.signatureDigest ? c.signatureDigest.slice(0, 16) + '...' : 'Verified Electronic Consent'}
                   </p>
                 </div>
 
@@ -254,7 +260,7 @@ export function GovernmentInbox({ inboxItems, onLaunchWorkflow }: GovernmentInbo
                 <div className="space-y-2 flex-1">
                   <div className="flex items-center space-x-2">
                     <span className="px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
-                      {item.domain}
+                      {formatHumanLabel(item.domain)}
                     </span>
                     <span className="text-xs text-[#64748B]">
                       {new Date(item.createdAt).toLocaleDateString()}

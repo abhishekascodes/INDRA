@@ -470,6 +470,18 @@ export async function seedDatabase(db: any = null) {
       pfBalance: 85000,
       pensionBalance: 24000,
     },
+    {
+      citizenId: AARAV_PATEL_ID,
+      uan: '101988219012',
+      memberId: 'KNBLR0049281000010928',
+      establishmentName: 'CloudScale Technologies Bengaluru Pvt Ltd',
+      establishmentId: 'KNBLR0049281',
+      joiningDate: '2018-06-01',
+      exitDate: '2021-03-31',
+      status: 'INACTIVE',
+      pfBalance: 42000,
+      pensionBalance: 12000,
+    },
   ]);
 
   await database.insert(schema.spiTelecomRecords).values([

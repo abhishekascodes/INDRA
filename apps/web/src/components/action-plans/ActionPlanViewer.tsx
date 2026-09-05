@@ -15,6 +15,11 @@ import {
   ArrowRightIcon,
   ShieldCheckIcon,
 } from '../icons.js';
+import {
+  formatHumanLabel,
+  formatStateLabel,
+  resolveStepTitle,
+} from '../../utils/civicFormatters.js';
 
 interface ActionPlanViewerProps {
   citizen?: any;
@@ -238,7 +243,7 @@ export const ActionPlanViewer: React.FC<ActionPlanViewerProps> = ({ citizen }) =
                   {p.title}
                 </div>
                 <div className="text-xs mt-1 flex items-center gap-2 text-[#64748B]">
-                  <span className="capitalize font-semibold">{p.state.toLowerCase().replace(/_/g, ' ')}</span>
+                  <span className="font-semibold text-slate-700">{formatStateLabel(p.state)}</span>
                   <span>·</span>
                   <span className="font-semibold text-[#0F172A]">
                     {p.completedTasks}/{p.totalTasks} Tasks Completed
@@ -267,7 +272,7 @@ export const ActionPlanViewer: React.FC<ActionPlanViewerProps> = ({ citizen }) =
                         : 'bg-blue-50 text-blue-800 border border-blue-200'
                     }`}
                   >
-                    {activePlan.state.replace(/_/g, ' ')}
+                    {formatStateLabel(activePlan.state)}
                   </span>
                   <span className="text-sm font-semibold text-[#475569]">
                     Estimated Duration: {activePlan.estimatedDaysToComplete} Days
@@ -371,7 +376,7 @@ export const ActionPlanViewer: React.FC<ActionPlanViewerProps> = ({ citizen }) =
                                       : 'bg-slate-200 text-slate-700 border border-slate-300'
                                   }`}
                                 >
-                                  {step.state}
+                                  {formatStateLabel(step.state)}
                                 </span>
                                 <span className="text-xs font-semibold text-indigo-700 bg-indigo-50/50 px-2 py-0.5 rounded border border-indigo-100">
                                   {step.authority}
@@ -426,14 +431,17 @@ export const ActionPlanViewer: React.FC<ActionPlanViewerProps> = ({ citizen }) =
                             {step.dependencies.length > 0 && (
                               <div className="text-xs text-[#64748B] pt-3 border-t border-[#E2E8F0] flex flex-wrap items-center gap-2">
                                 <span className="font-bold text-[#475569]">Prerequisites Required:</span>
-                                {step.dependencies.map((dep) => (
-                                  <span
-                                    key={dep}
-                                    className="font-mono text-xs px-2 py-0.5 rounded bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold"
-                                  >
-                                    {dep}
-                                  </span>
-                                ))}
+                                {step.dependencies.map((dep) => {
+                                  const depTitle = resolveStepTitle(dep, activePlan.steps);
+                                  return (
+                                    <span
+                                      key={dep}
+                                      className="inline-flex items-center text-xs px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-800 font-medium"
+                                    >
+                                      {depTitle}
+                                    </span>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>

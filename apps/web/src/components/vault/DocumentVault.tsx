@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { LockIcon, ShieldCheckIcon, CheckIcon, AlertCircleIcon, FileTextIcon } from '../icons.js';
+import { formatHumanLabel } from '../../utils/civicFormatters.js';
 
 interface DocumentVaultProps {
   documents: any[];
@@ -157,8 +158,8 @@ export function DocumentVault({ documents = [], onLaunchWorkflow }: DocumentVaul
                     )}
 
                     {doc.provenanceId && (
-                      <div className="text-xs text-[#94A3B8] font-mono pt-1 truncate">
-                        Prov: {doc.provenanceId}
+                      <div className="text-xs text-[#94A3B8] pt-1 truncate">
+                        Registry Ref: {formatHumanLabel(doc.provenanceId)}
                       </div>
                     )}
                   </div>

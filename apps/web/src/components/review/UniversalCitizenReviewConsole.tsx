@@ -19,6 +19,7 @@ import {
   CloseIcon,
   FileTextIcon,
 } from '../icons.js';
+import { formatHumanLabel, formatStateLabel } from '../../utils/civicFormatters.js';
 import {
   fetchReviewSession,
   editReviewField,
@@ -184,13 +185,13 @@ export function UniversalCitizenReviewConsole({
                     : 'bg-slate-100 text-slate-800 border-slate-200'
                 }`}
               >
-                REVIEW MODE: {session.reviewMode.replace(/_/g, ' ')}
+                Review Mode: {formatHumanLabel(session.reviewMode)}
               </span>
-              <span className="px-3 py-1 text-xs font-bold tracking-wider uppercase rounded-full border bg-slate-100 text-slate-800 border-slate-200">
-                REVIEW VERSION: v{session.version || 1}
+              <span className="px-3 py-1 text-xs font-semibold tracking-wide rounded-full border bg-slate-100 text-slate-800 border-slate-200">
+                Review Version: v{session.version || 1}
               </span>
-              <span className="px-3 py-1 text-xs font-bold tracking-wider uppercase rounded-full border bg-blue-50 text-blue-800 border-blue-200">
-                SYNTHETIC INFRASTRUCTURE
+              <span className="px-3 py-1 text-xs font-semibold tracking-wide rounded-full border bg-blue-50 text-blue-800 border-blue-200">
+                Synthetic Infrastructure
               </span>
               <span className="text-xs font-medium text-[#64748B] flex items-center">
                 <ClockIcon className="w-3.5 h-3.5 mr-1 text-[#64748B]" />
@@ -210,9 +211,9 @@ export function UniversalCitizenReviewConsole({
 
           <div className="text-left sm:text-right space-y-1 bg-white p-3 rounded-xl border border-[#E2E8F0] sm:border-0 sm:bg-transparent sm:p-0">
             <div className="text-xs text-[#64748B] font-semibold uppercase tracking-wider">
-              Server-Issued Authorization Binding
+              Authorization Checksum
             </div>
-            <div className="font-mono text-xs font-semibold text-[#0F172A] bg-slate-100 sm:bg-white px-2.5 py-1 rounded-lg border border-slate-200 sm:border-slate-300 inline-block">
+            <div className="text-xs font-semibold text-[#0F172A] bg-slate-100 sm:bg-white px-2.5 py-1 rounded-lg border border-slate-200 sm:border-slate-300 inline-block">
               SHA256:{session.payloadHash.slice(0, 8)}...{session.payloadHash.slice(-8)}
             </div>
           </div>
@@ -256,14 +257,14 @@ export function UniversalCitizenReviewConsole({
                   return (
                     <tr key={field.fieldKey} className="hover:bg-[#FAFAFA] transition">
                       <td className="p-3.5 font-bold text-[#0F172A]">{field.label}</td>
-                      <td className="p-3.5 font-mono text-sm text-[#334155]">
+                      <td className="p-3.5 text-sm font-medium text-[#334155]">
                         {isEditing ? (
                           <div className="flex items-center space-x-2">
                             <input
                               type="text"
                               value={editValue}
                               onChange={(e) => setEditValue(e.target.value)}
-                              className="px-3 py-1.5 border border-indigo-600 rounded-lg text-sm font-mono focus:outline-none bg-white ring-2 ring-indigo-50"
+                              className="px-3 py-1.5 border border-indigo-600 rounded-lg text-sm focus:outline-none bg-white ring-2 ring-indigo-50"
                               autoFocus
                             />
                             <button
@@ -343,7 +344,9 @@ export function UniversalCitizenReviewConsole({
                 </div>
                 <div>
                   <span className="text-[#64748B]">Data Categories: </span>
-                  <span className="font-mono text-xs">{disc.categories.join(', ')}</span>
+                  <span className="text-xs font-semibold text-[#0F172A]">
+                    {disc.categories.map((c) => formatHumanLabel(c)).join(', ')}
+                  </span>
                 </div>
                 <div>
                   <span className="text-[#64748B]">Purpose: </span>

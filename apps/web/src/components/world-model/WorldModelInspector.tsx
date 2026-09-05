@@ -10,6 +10,7 @@ import {
   ScaleOfJusticeIcon,
   CheckIcon,
 } from '../icons.js';
+import { formatHumanLabel, formatStateLabel } from '../../utils/civicFormatters.js';
 
 interface WorldModelInspectorProps {
   citizenId: string;
@@ -84,7 +85,7 @@ export const WorldModelInspector: React.FC<WorldModelInspectorProps> = ({ citize
               <ShieldCheckIcon className="w-4 h-4 mr-1.5 text-emerald-600" />
               100% Verified Ground Truth
             </span>
-            <p className="text-xs text-[#64748B] mt-1 font-mono">Profile ID: {worldModel.profile.id.slice(0, 8)}...</p>
+            <p className="text-xs text-[#64748B] mt-1 font-medium">Record: {worldModel.profile.fullName}</p>
           </div>
         </div>
       </div>
@@ -195,17 +196,17 @@ export const WorldModelInspector: React.FC<WorldModelInspectorProps> = ({ citize
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-base font-bold text-[#0F172A] tracking-wide">{v.registrationNumber}</span>
                   <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded font-bold">
-                    {v.status}
+                    {formatStateLabel(v.status)}
                   </span>
                 </div>
                 <p className="text-sm font-semibold text-[#334155]">{v.makerModel}</p>
                 <div className="grid grid-cols-2 gap-2 text-xs text-[#475569] pt-2 border-t border-[#E2E8F0]">
-                  <div>RTO: <span className="font-mono text-[#0F172A] font-semibold">{v.rtoCode} ({v.state})</span></div>
-                  <div>Fitness: <span className="font-mono text-[#0F172A] font-semibold">{v.fitnessValidUntil}</span></div>
+                  <div>RTO: <span className="text-[#0F172A] font-semibold">{v.rtoCode} ({v.state})</span></div>
+                  <div>Fitness: <span className="text-[#0F172A] font-semibold">{v.fitnessValidUntil}</span></div>
                   {v.hypothecatedTo && <div className="col-span-2">Hypothecated: <span className="font-semibold text-[#0F172A]">{v.hypothecatedTo}</span></div>}
                 </div>
                 <div className="text-xs text-[#64748B] pt-2 border-t border-[#E2E8F0] flex items-center justify-between">
-                  <span>Source: {v.provenance.source}</span>
+                  <span>Source: {formatHumanLabel(v.provenance.source)}</span>
                   <span className="font-bold text-emerald-700 flex items-center gap-1">
                     <CheckIcon className="w-3.5 h-3.5" />
                     Verified Official Record
@@ -238,16 +239,16 @@ export const WorldModelInspector: React.FC<WorldModelInspectorProps> = ({ citize
           {worldModel.properties.map((p) => (
             <div key={p.id} className="p-5 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#475569]">{p.propertyType.replace('_', ' ')}</span>
-                <span className="font-mono text-xs text-[#0F172A] font-bold">{p.identifier}</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#475569]">{formatHumanLabel(p.propertyType)}</span>
+                <span className="text-xs text-[#0F172A] font-bold">{p.identifier}</span>
               </div>
               <p className="text-sm font-semibold text-[#0F172A]">{p.address}</p>
               <div className="flex items-center justify-between text-xs text-[#475569] pt-2 border-t border-[#E2E8F0]">
                 <span>Authority: <span className="font-semibold text-[#0F172A]">{p.municipalBody}</span></span>
-                <span className="text-emerald-700 font-bold">Tax: ₹{p.annualTaxInr.toLocaleString()} ({p.taxPaymentStatus})</span>
+                <span className="text-emerald-700 font-bold">Tax: ₹{p.annualTaxInr.toLocaleString()} ({formatStateLabel(p.taxPaymentStatus)})</span>
               </div>
               <div className="text-xs text-[#64748B] pt-2 border-t border-[#E2E8F0] flex items-center justify-between">
-                <span>Source: {p.provenance.source}</span>
+                <span>Source: {formatHumanLabel(p.provenance.source)}</span>
                 <span className="font-bold text-emerald-700 flex items-center gap-1">
                   <CheckIcon className="w-3.5 h-3.5" />
                   Verified Official Record
@@ -287,13 +288,13 @@ export const WorldModelInspector: React.FC<WorldModelInspectorProps> = ({ citize
                 )}
               </div>
               <p className="text-xs text-[#475569] font-medium">{e.designation || 'Specialist'}</p>
-              <div className="grid grid-cols-3 gap-2 text-xs font-mono text-[#334155] pt-2 border-t border-[#E2E8F0]">
+              <div className="grid grid-cols-3 gap-2 text-xs text-[#334155] pt-2 border-t border-[#E2E8F0]">
                 <div>UAN: <span className="font-bold text-[#0F172A]">{e.uan || 'Linked'}</span></div>
                 <div>Member ID: <span className="font-bold text-[#0F172A]">{e.memberId ? e.memberId.slice(0, 16) + '...' : 'N/A'}</span></div>
                 <div className="text-right">Tenure: {e.startDate} → {e.endDate || 'Present'}</div>
               </div>
               <div className="text-xs text-[#64748B] pt-2 border-t border-[#E2E8F0] flex items-center justify-between">
-                <span>Est. ID: {e.establishmentId}</span>
+                <span>Establishment: {e.establishmentId}</span>
                 <span className="font-bold text-emerald-700 flex items-center gap-1">
                   <CheckIcon className="w-3.5 h-3.5" />
                   Verified Official Record
@@ -324,7 +325,7 @@ export const WorldModelInspector: React.FC<WorldModelInspectorProps> = ({ citize
               <div>
                 <div className="flex items-center gap-2.5">
                   <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md ${o.status === 'SATISFIED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
-                    {o.status}
+                    {formatStateLabel(o.status)}
                   </span>
                   <span className="text-base font-bold text-[#0F172A]">{o.title}</span>
                 </div>

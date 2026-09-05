@@ -22,6 +22,7 @@ import {
 } from '../icons.js';
 
 import { fetchRelocationImpact } from '../../api.js';
+import { formatHumanLabel, formatStateLabel } from '../../utils/civicFormatters.js';
 
 interface PersonalGovernmentHomeProps {
   citizen: any;
@@ -168,7 +169,7 @@ export function PersonalGovernmentHome({
               </span>
 
               <span className="text-xs font-semibold text-[#64748B]">
-                {transitionIntent.intentId.replace(/_/g, ' ')}
+                {transitionIntent.suggestedActionTitle || formatHumanLabel(transitionIntent.intentId)}
               </span>
             </div>
 

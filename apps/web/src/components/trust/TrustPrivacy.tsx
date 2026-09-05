@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldCheckIcon, LockIcon, CheckIcon } from '../icons.js';
+import { formatHumanLabel } from '../../utils/civicFormatters.js';
 
 interface TrustPrivacyProps {
   auditLogs: any[];
@@ -37,8 +38,8 @@ export function TrustPrivacy({ auditLogs, consents }: TrustPrivacyProps) {
                   </span>
                 </div>
                 <div className="text-[#475569] leading-relaxed">{c.actionDescription}</div>
-                <div className="text-xs text-[#64748B] mono flex flex-col sm:flex-row sm:justify-between pt-2 border-t border-[#F8FAFC] gap-1">
-                  <span>Scope: {Array.isArray(c.dataElementsScope) ? c.dataElementsScope.join(', ') : 'Ground Truth'}</span>
+                <div className="text-xs text-[#64748B] flex flex-col sm:flex-row sm:justify-between pt-2 border-t border-[#F8FAFC] gap-1">
+                  <span>Scope: {Array.isArray(c.dataElementsScope) ? c.dataElementsScope.map((s: string) => formatHumanLabel(s)).join(', ') : 'Ground Truth'}</span>
                   <span>Granted: {new Date(c.grantedAt).toLocaleString()}</span>
                 </div>
               </div>
@@ -65,10 +66,10 @@ export function TrustPrivacy({ auditLogs, consents }: TrustPrivacyProps) {
             auditLogs.map((log) => (
               <div key={log.id} className="p-4 flex items-center justify-between text-sm hover:bg-[#F8FAFC] transition">
                 <div className="space-y-1">
-                  <div className="font-bold text-[#0F172A] mono text-xs">{log.actionType}</div>
-                  <div className="text-xs text-[#64748B]">{log.actorRole} · Entity: {log.targetEntity || 'SYSTEM'}</div>
+                  <div className="font-bold text-[#0F172A] text-xs">{formatHumanLabel(log.actionType)}</div>
+                  <div className="text-xs text-[#64748B]">{log.actorRole} · Entity: {formatHumanLabel(log.targetEntity || 'System')}</div>
                 </div>
-                <div className="text-right text-xs text-[#94A3B8] mono">
+                <div className="text-right text-xs text-[#94A3B8]">
                   {new Date(log.createdAt).toLocaleTimeString()}
                 </div>
               </div>

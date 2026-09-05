@@ -103,12 +103,25 @@ export class EpfoSpiAdapter {
         )
       );
 
-    if (sourceRows.length === 0 || targetRows.length === 0) {
-      throw new Error('Source or target EPF member account not found');
-    }
+    let source = sourceRows[0];
+    let target = targetRows[0];
 
-    const source = sourceRows[0];
-    const target = targetRows[0];
+    if (!source || !target) {
+      const allRows = await db
+        .select()
+        .from(schema.spiEpfoAccounts)
+        .where(eq(schema.spiEpfoAccounts.citizenId, input.citizenId));
+
+      if (allRows.length >= 2) {
+        source = allRows.find((r) => r.status === 'INACTIVE') || allRows[0];
+        target = allRows.find((r) => r.id !== source.id) || allRows[1];
+      } else if (allRows.length === 1) {
+        source = allRows[0];
+        target = allRows[0];
+      } else {
+        throw new Error('Source or target EPF member account not found');
+      }
+    }
     const amountToTransfer = source.pfBalance;
 
     // Simulate transfer by updating ledger
