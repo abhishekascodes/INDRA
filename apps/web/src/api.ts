@@ -18,13 +18,25 @@ export function getActiveCitizenId(): string | null {
   return activeCitizenId;
 }
 
+import { handleStandaloneApi } from './standalone-engine.js';
+
 async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
-  const headers = getHeaders((init.headers as Record<string, string>) || {});
-  return fetch(input, {
-    ...init,
-    headers,
-    credentials: 'include',
-  });
+  try {
+    const headers = getHeaders((init.headers as Record<string, string>) || {});
+    const res = await fetch(input, {
+      ...init,
+      headers,
+      credentials: 'include',
+    });
+    const contentType = res.headers.get('content-type') || '';
+    if (res.status !== 404 && res.status !== 502 && res.status !== 503 && contentType.includes('application/json')) {
+      return res;
+    }
+  } catch {
+    // Backend offline: fall through to autonomous in-browser engine
+  }
+
+  return handleStandaloneApi(input, init);
 }
 
 export interface AuthMeResponse {
