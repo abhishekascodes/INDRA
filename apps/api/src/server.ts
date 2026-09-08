@@ -105,23 +105,26 @@ export async function buildApp() {
       }
     }
 
-    // 2. Header fallback (for test suite integration)
-    if (!(request as any).authenticatedCitizenId) {
-      const citizenIdHeader = request.headers?.['x-citizen-id'] as string;
-      if (citizenIdHeader) {
-        let resolved = citizenIdHeader;
-        if (citizenIdHeader === 'aarav-patel' || citizenIdHeader === 'aarav') resolved = AARAV_PATEL_ID;
-        if (citizenIdHeader === 'priya-sharma' || citizenIdHeader === 'priya') resolved = PRIYA_SHARMA_ID;
-        (request as any).authenticatedCitizenId = resolved;
-        (request as any).authSource = 'header';
-      }
-    }
+    // 2. Explicit anonymous/unauthenticated bypass (for automated security test suites)
+    const isExplicitlyAnonymous =
+      request.headers?.['x-unauthenticated'] === 'true' ||
+      request.headers?.['x-anonymous'] === 'true';
 
-    // 3. Fallback for test runner if neither cookie nor header passed in test mode
-    if (!(request as any).authenticatedCitizenId) {
+    // 3. Header fallback (for test suite runner ONLY, never in live browser sessions)
+    if (!(request as any).authenticatedCitizenId && !isExplicitlyAnonymous) {
       if (process.env.VITEST || process.env.NODE_ENV === 'test') {
-        (request as any).authenticatedCitizenId = PRIYA_SHARMA_ID;
-        (request as any).authSource = 'test_default';
+        const citizenIdHeader = request.headers?.['x-citizen-id'] as string;
+        if (citizenIdHeader) {
+          let resolved = citizenIdHeader;
+          if (citizenIdHeader === 'aarav-patel' || citizenIdHeader === 'aarav') resolved = AARAV_PATEL_ID;
+          if (citizenIdHeader === 'priya-sharma' || citizenIdHeader === 'priya') resolved = PRIYA_SHARMA_ID;
+          (request as any).authenticatedCitizenId = resolved;
+          (request as any).authSource = 'header';
+        } else if (process.env.INDRA_STRICT_AUTH !== 'true') {
+          // Default for legacy test cases that do not specify identity
+          (request as any).authenticatedCitizenId = PRIYA_SHARMA_ID;
+          (request as any).authSource = 'test_default';
+        }
       }
     }
 
@@ -135,12 +138,38 @@ export async function buildApp() {
       currentPath === '/api/citizens/synthetic-list' ||
       currentPath === '/api/capabilities';
 
-    // Strict Tenant Boundary Validation:
-    // If request contains citizenId in body or query, it MUST match authenticatedCitizenId!
     const effectiveCitizenId = (request as any).authenticatedCitizenId;
-    const bodyCitizenId = (request.body as any)?.citizenId;
+
+    // 4. Header Spoofing Protection:
+    // If authenticated via session, but incoming request specifies conflicting x-citizen-id header, reject immediately!
+    const headerCitizenId = request.headers?.['x-citizen-id'] as string;
+    if (headerCitizenId && effectiveCitizenId) {
+      let resolvedHeader = headerCitizenId;
+      if (headerCitizenId === 'aarav-patel' || headerCitizenId === 'aarav') resolvedHeader = AARAV_PATEL_ID;
+      if (headerCitizenId === 'priya-sharma' || headerCitizenId === 'priya') resolvedHeader = PRIYA_SHARMA_ID;
+      if (resolvedHeader !== effectiveCitizenId) {
+        await logAuthEvent(
+          'TENANT_BOUNDARY_VIOLATION_ATTEMPT',
+          'FAILURE',
+          (request as any).authenticatedUser?.id,
+          effectiveCitizenId,
+          request.ip || '127.0.0.1',
+          { attemptedCitizenId: resolvedHeader, source: 'header_spoofing', path: currentPath }
+        );
+        return reply.status(403).send({
+          error: 'Forbidden: Tenant boundary violation. Cannot spoof citizen identity via headers.',
+          code: 'TENANT_BOUNDARY_VIOLATION',
+        });
+      }
+    }
+
+    // 5. Strict Tenant Boundary Validation across body, nested input, query, and path params
+    const bodyCitizenId =
+      (request.body as any)?.citizenId ||
+      (request.body as any)?.input?.citizenId;
     const queryCitizenId = (request.query as any)?.citizenId;
-    const targetCitizenId = bodyCitizenId || queryCitizenId;
+    const paramsCitizenId = (request.params as any)?.citizenId;
+    const targetCitizenId = bodyCitizenId || queryCitizenId || paramsCitizenId;
 
     if (targetCitizenId && effectiveCitizenId && targetCitizenId !== effectiveCitizenId) {
       await logAuthEvent(
@@ -157,7 +186,35 @@ export async function buildApp() {
       });
     }
 
-    // Protection check for non-public API routes
+    // 6. CSRF Origin Verification on state-changing requests
+    const method = request.method.toUpperCase();
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method) && !isPublic && (request as any).authSource === 'session') {
+      const origin = (request.headers.origin || request.headers.referer) as string | undefined;
+      const host = request.headers.host;
+      if (origin && host) {
+        try {
+          const originHost = new URL(origin).host;
+          if (originHost !== host) {
+            await logAuthEvent(
+              'CSRF_VIOLATION_ATTEMPT',
+              'FAILURE',
+              (request as any).authenticatedUser?.id,
+              effectiveCitizenId,
+              request.ip || '127.0.0.1',
+              { origin, host, path: currentPath }
+            );
+            return reply.status(403).send({
+              error: 'Forbidden: Cross-site request forgery protection triggered.',
+              code: 'CSRF_DETECTED',
+            });
+          }
+        } catch {
+          // ignore unparseable URL
+        }
+      }
+    }
+
+    // 7. Protection check for non-public API routes
     if (!isPublic && !effectiveCitizenId) {
       return reply.status(401).send({
         error: 'Unauthorized: Active session required to access citizen services',
@@ -1235,6 +1292,11 @@ export async function buildApp() {
       const { id } = request.params;
       const db = await getDb();
 
+      const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!id || !UUID_REGEX.test(id)) {
+        return reply.status(404).send({ error: 'Consent artifact not found' });
+      }
+
       const existing = await db
         .select()
         .from(schema.consentArtifacts)
@@ -1246,6 +1308,13 @@ export async function buildApp() {
         );
 
       if (existing.length === 0) {
+        const otherExisting = await db
+          .select()
+          .from(schema.consentArtifacts)
+          .where(eq(schema.consentArtifacts.id, id));
+        if (otherExisting.length > 0) {
+          return reply.status(403).send({ error: 'Forbidden: Cannot revoke consent artifact of another citizen', code: 'TENANT_BOUNDARY_VIOLATION' });
+        }
         return reply.status(404).send({ error: 'Consent artifact not found or unauthorized' });
       }
 
@@ -1314,6 +1383,17 @@ export async function buildApp() {
     const { id } = request.params;
     const transition = await transitionExecutor.getTransition(id, authCitizenId);
     if (!transition) {
+      const db = await getDb();
+      const anyTrans = await db
+        .select()
+        .from(schema.citizenStateTransitions)
+        .where(eq(schema.citizenStateTransitions.id, id));
+      if (anyTrans.length > 0) {
+        return reply.status(403).send({
+          error: 'Forbidden: Access to transition denied across citizen boundary',
+          code: 'TENANT_BOUNDARY_VIOLATION',
+        });
+      }
       return reply.status(404).send({ error: 'State transition not found' });
     }
     return { success: true, transition };
@@ -1362,6 +1442,18 @@ export async function buildApp() {
     const { id } = request.params;
     const { token } = request.body || {};
 
+    const db = await getDb();
+    const anyTrans = await db
+      .select()
+      .from(schema.citizenStateTransitions)
+      .where(eq(schema.citizenStateTransitions.id, id));
+    if (anyTrans.length > 0 && anyTrans[0].citizenId !== authCitizenId) {
+      return reply.status(403).send({
+        error: 'Forbidden: Cannot authorize transition for another citizen',
+        code: 'TENANT_BOUNDARY_VIOLATION',
+      });
+    }
+
     try {
       const updated = await transitionExecutor.authorizeTransition(id, authCitizenId, token);
       return { success: true, transition: updated };
@@ -1376,6 +1468,18 @@ export async function buildApp() {
     const authCitizenId = getAuthenticatedCitizenId(request);
     const { id } = request.params;
 
+    const db = await getDb();
+    const anyTrans = await db
+      .select()
+      .from(schema.citizenStateTransitions)
+      .where(eq(schema.citizenStateTransitions.id, id));
+    if (anyTrans.length > 0 && anyTrans[0].citizenId !== authCitizenId) {
+      return reply.status(403).send({
+        error: 'Forbidden: Cannot execute transition for another citizen',
+        code: 'TENANT_BOUNDARY_VIOLATION',
+      });
+    }
+
     try {
       const updated = await transitionExecutor.executeTransitionLoop(id, authCitizenId);
       return { success: true, transition: updated };
@@ -1389,6 +1493,18 @@ export async function buildApp() {
   server.post<{ Params: { id: string } }>('/api/transitions/:id/resume', async (request, reply) => {
     const authCitizenId = getAuthenticatedCitizenId(request);
     const { id } = request.params;
+
+    const db = await getDb();
+    const anyTrans = await db
+      .select()
+      .from(schema.citizenStateTransitions)
+      .where(eq(schema.citizenStateTransitions.id, id));
+    if (anyTrans.length > 0 && anyTrans[0].citizenId !== authCitizenId) {
+      return reply.status(403).send({
+        error: 'Forbidden: Cannot resume transition for another citizen',
+        code: 'TENANT_BOUNDARY_VIOLATION',
+      });
+    }
 
     try {
       const updated = await transitionExecutor.resumeTransition(id, authCitizenId);
@@ -1410,6 +1526,18 @@ export async function buildApp() {
 
     if (!contradictionId) {
       return reply.status(400).send({ error: 'contradictionId is required' });
+    }
+
+    const db = await getDb();
+    const anyTrans = await db
+      .select()
+      .from(schema.citizenStateTransitions)
+      .where(eq(schema.citizenStateTransitions.id, id));
+    if (anyTrans.length > 0 && anyTrans[0].citizenId !== authCitizenId) {
+      return reply.status(403).send({
+        error: 'Forbidden: Cannot resolve contradiction for another citizen',
+        code: 'TENANT_BOUNDARY_VIOLATION',
+      });
     }
 
     try {

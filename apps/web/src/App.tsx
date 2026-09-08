@@ -158,6 +158,12 @@ export function App() {
     });
     setCitizen(null);
     setActiveWorkflowRun(null);
+    setInboxItems([]);
+    setVaultDocs([]);
+    setApplications([]);
+    setAuditLogs([]);
+    setConsents([]);
+    setAppError(null);
     window.location.hash = 'home';
   };
 
