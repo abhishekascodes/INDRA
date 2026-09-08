@@ -202,7 +202,7 @@ export function CitizenTransitionConsole({
   );
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* 1. HERO EVALUATION CARD */}
       <div className="bg-white border border-[#CBD5E1] rounded-2xl p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
