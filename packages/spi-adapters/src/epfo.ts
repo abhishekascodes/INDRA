@@ -1,5 +1,5 @@
 import { getDb, schema } from '@indra/database';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, or } from 'drizzle-orm';
 
 export interface EpfoAccountSummary {
   id: string;
@@ -58,7 +58,10 @@ export class EpfoSpiAdapter {
       .where(
         and(
           eq(schema.spiEpfoAccounts.citizenId, citizenId),
-          eq(schema.spiEpfoAccounts.status, 'DORMANT')
+          or(
+            eq(schema.spiEpfoAccounts.status, 'DORMANT'),
+            eq(schema.spiEpfoAccounts.status, 'INACTIVE')
+          )
         )
       );
 

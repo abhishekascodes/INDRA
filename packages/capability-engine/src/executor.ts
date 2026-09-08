@@ -93,24 +93,30 @@ export class CapabilityExecutor {
     }
 
     // 5. Idempotency Check
+    // If caller explicitly provides an idempotencyKey, always check idempotency cache.
+    // If not provided, mutating operations use deterministic input hash, while READ_ONLY operations execute live.
     const db = await getDb();
+    const isExplicitIdempotency = !!context.idempotencyKey;
+    const isReadOnly = capability.sideEffectClass === 'READ_ONLY';
     const rawKey = `${context.citizenId}:${capabilityId}:${JSON.stringify(parsedInput.data)}`;
     const idempotencyKey =
       context.idempotencyKey ||
-      crypto.createHash('sha256').update(rawKey).digest('hex');
+      (isReadOnly ? crypto.randomUUID() : crypto.createHash('sha256').update(rawKey).digest('hex'));
 
-    const existingRun = await db
-      .select()
-      .from(schema.capabilityRuns)
-      .where(eq(schema.capabilityRuns.idempotencyKey, idempotencyKey));
+    if (isExplicitIdempotency || !isReadOnly) {
+      const existingRun = await db
+        .select()
+        .from(schema.capabilityRuns)
+        .where(eq(schema.capabilityRuns.idempotencyKey, idempotencyKey));
 
-    if (existingRun.length > 0 && existingRun[0].status === 'SUCCESS') {
-      return {
-        success: true,
-        capabilityId,
-        output: existingRun[0].outputs as T,
-        idempotencyHit: true,
-      };
+      if (existingRun.length > 0 && existingRun[0].status === 'SUCCESS') {
+        return {
+          success: true,
+          capabilityId,
+          output: existingRun[0].outputs as T,
+          idempotencyHit: true,
+        };
+      }
     }
 
     // 6. Capability Execution

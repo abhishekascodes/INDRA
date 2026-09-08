@@ -507,9 +507,9 @@ export async function seedDatabase(db: any = null) {
       establishmentId: 'KNBLR0049281',
       joiningDate: '2018-06-01',
       exitDate: '2021-03-31',
-      status: 'INACTIVE',
-      pfBalance: 42000,
-      pensionBalance: 12000,
+      status: 'DORMANT',
+      pfBalance: 142500,
+      pensionBalance: 28000,
     },
   ]);
 

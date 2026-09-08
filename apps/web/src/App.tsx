@@ -202,11 +202,14 @@ export function App() {
 
   const [appError, setAppError] = useState<string | null>(null);
   const [appNotice, setAppNotice] = useState<string | null>(null);
+  const [workspaceResetKey, setWorkspaceResetKey] = useState<number>(0);
 
   const handleResetWorkspace = async () => {
     try {
       setAppError(null);
       await resetSyntheticWorkspace();
+      setWorkspaceResetKey((prev) => prev + 1);
+      window.dispatchEvent(new CustomEvent('workspace-reset'));
       setAppNotice('Synthetic workspace reset to clean evaluation baseline successfully. Public registries synchronized.');
       setActiveWorkflowRun(null);
       await loadData();
@@ -343,7 +346,7 @@ export function App() {
             )}
 
             {activeTab === 'action-plans' && (
-              <ActionPlanViewer citizen={citizen} />
+              <ActionPlanViewer key={`plans-${citizen?.id}-${workspaceResetKey}`} citizen={citizen} />
             )}
 
             {activeTab === 'transitions' && (

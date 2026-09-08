@@ -23,7 +23,7 @@ export const EpfoInquireAccountsCapability: CapabilityContract<{ citizenId: stri
   }),
   execute: async (input) => {
     const accounts = await epfoAdapter.getAccountsForCitizen(input.citizenId);
-    const dormant = accounts.filter((a) => a.status === 'DORMANT');
+    const dormant = accounts.filter((a) => a.status === 'DORMANT' || a.status === 'INACTIVE');
     return {
       accounts,
       dormantFound: dormant.length > 0,

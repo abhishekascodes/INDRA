@@ -8,7 +8,7 @@ import {
   CapabilityRegistry,
   registerDefaultCapabilities,
 } from '@indra/capability-engine';
-import { seedDatabase, PRIYA_SHARMA_ID } from '@indra/database';
+import { resetDatabase, PRIYA_SHARMA_ID } from '@indra/database';
 
 import { z } from '@indra/contracts';
 
@@ -18,7 +18,7 @@ describe('Audit 3: Side-Effect Safety & Irreversible Action Enforcement', () => 
   beforeEach(async () => {
     registerDefaultCapabilities();
     registerDefaultWorkflows();
-    await seedDatabase();
+    await resetDatabase();
     runner = new WorkflowRunner();
   });
 

@@ -76,6 +76,14 @@ export const ActionPlanViewer: React.FC<ActionPlanViewerProps> = ({ citizen }) =
         await handleGenerate('RELOCATION');
       }
     });
+
+    const onReset = () => {
+      loadPlans();
+    };
+    window.addEventListener('workspace-reset', onReset);
+    return () => {
+      window.removeEventListener('workspace-reset', onReset);
+    };
   }, [citizen?.id]);
 
   const handleGenerate = async (code: LifeEventCode, forceRecreate = false) => {

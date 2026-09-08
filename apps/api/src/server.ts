@@ -227,11 +227,67 @@ export async function buildApp() {
     }
   });
 
+  async function seedBaselineActionPlans(citizenId: string) {
+    try {
+      const engine = ActionPlanEngine.getInstance();
+      const db = await getDb();
+      const citizens = await db
+        .select()
+        .from(schema.citizens)
+        .where(eq(schema.citizens.id, citizenId));
+      const citizenRec = citizens[0];
+      const originCity = citizenRec?.currentCity || 'Bengaluru';
+      const isPune = originCity.toLowerCase().includes('pune');
+
+      await engine.generateActionPlan(
+        citizenId,
+        'START_BUSINESS',
+        {
+          companyName: 'AeroDynamics AI Solutions Private Limited',
+          entityType: 'PRIVATE_LIMITED',
+        },
+        { forceRecreate: true }
+      );
+
+      await engine.generateActionPlan(
+        citizenId,
+        'NEW_EMPLOYMENT',
+        {
+          employerName: 'TechSolutions India Corp',
+        },
+        { forceRecreate: true }
+      );
+
+      await engine.generateActionPlan(
+        citizenId,
+        'RELOCATION',
+        {
+          destinationCity: isPune ? 'Bengaluru' : 'Pune',
+          destinationState: isPune ? 'Karnataka' : 'Maharashtra',
+          destinationRto: isPune ? 'KA-01' : 'MH-12',
+          destinationAddress: isPune
+            ? 'Flat 402, Shanti Heights, 12th Main, HAL 2nd Stage, Indiranagar, Bengaluru - 560038'
+            : 'Flat 102, Shanti Vihar, Koregaon Park, Pune - 411001',
+        },
+        { forceRecreate: true }
+      );
+    } catch (err) {
+      console.warn(`[ActionPlan] Failed to seed baseline action plans for citizen ${citizenId}:`, err);
+    }
+  }
+
   // Initialize registries and database
   registerDefaultCapabilities();
   registerDefaultWorkflows();
   ActionPlanEngine.getInstance().setStepExecutor(capabilityExecutor);
   await seedDatabase();
+
+  for (const cid of [PRIYA_SHARMA_ID, AARAV_PATEL_ID]) {
+    const existing = await ActionPlanEngine.getInstance().listActionPlans(cid);
+    if (!existing || existing.length === 0) {
+      await seedBaselineActionPlans(cid);
+    }
+  }
 
   // 1. Health Check
   server.get('/api/health', async () => {
@@ -603,6 +659,7 @@ export async function buildApp() {
     try {
       const db = await getDb();
       const baseline = await resetCitizenWorkspace(db, authCitizenId);
+      await seedBaselineActionPlans(authCitizenId);
 
       // Reset in-memory SPI adapter simulation state as well
       propertySpiAdapter.setSimulationMode({

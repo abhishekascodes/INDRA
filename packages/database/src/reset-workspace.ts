@@ -18,6 +18,9 @@ export async function resetCitizenWorkspace(db: any = null, citizenId: string) {
   await database.delete(schema.consentArtifacts).where(eq(schema.consentArtifacts.citizenId, citizenId));
   await database.delete(schema.auditLogs).where(eq(schema.auditLogs.citizenId, citizenId));
   await database.delete(schema.proactiveFindings).where(eq(schema.proactiveFindings.citizenId, citizenId));
+  await database.delete(schema.actionPlans).where(eq(schema.actionPlans.citizenId, citizenId));
+  await database.delete(schema.capabilityRuns).where(eq(schema.capabilityRuns.citizenId, citizenId));
+  await database.delete(schema.workflowRuns).where(eq(schema.workflowRuns.citizenId, citizenId));
 
   // 2. Delete domain and identity tables
   await database.delete(schema.citizenProperties).where(eq(schema.citizenProperties.citizenId, citizenId));
@@ -156,9 +159,9 @@ export async function resetCitizenWorkspace(db: any = null, citizenId: string) {
         establishmentId: 'KNBLR0049281',
         joiningDate: '2018-06-01',
         exitDate: '2021-03-31',
-        status: 'INACTIVE',
-        pfBalance: 42000,
-        pensionBalance: 12000,
+        status: 'DORMANT',
+        pfBalance: 142500,
+        pensionBalance: 28000,
       },
     ]);
 
