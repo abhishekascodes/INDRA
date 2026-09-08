@@ -154,6 +154,50 @@ async function run() {
         const logoutPath = path.join(ARTIFACT_DIR, 'auth_05_logged_out.png');
         await page.screenshot({ path: logoutPath, fullPage: true });
         console.log(`[E2E Auth Test] Saved: ${logoutPath}`);
+
+        // 6. Sign in as Priya Sharma (priya.sharma@example.in)
+        console.log('[E2E Auth Test] 6. Signing in as Priya Sharma (priya.sharma@example.in)...');
+        const priyaEmailInput = await page.$('input[type="email"]');
+        const priyaPasswordInput = await page.$('input[type="password"]');
+
+        await priyaEmailInput.click({ clickCount: 3 });
+        await priyaEmailInput.type('priya.sharma@example.in');
+
+        await priyaPasswordInput.click({ clickCount: 3 });
+        await priyaPasswordInput.type('Password123!');
+
+        const priyaSubmitBtn = await page.$('button[type="submit"]');
+        await priyaSubmitBtn.click();
+
+        console.log('[E2E Auth Test] Waiting for Priya workspace to load...');
+        await page.waitForSelector('header', { timeout: 10000 });
+        await sleep(2500);
+
+        const priyaHeaderText = await page.$eval('header', (el) => el.innerText);
+        console.log('[E2E Auth Test] Priya header snippet:', priyaHeaderText.slice(0, 150).replace(/\n/g, ' '));
+        if (!priyaHeaderText.includes('Priya Sharma')) {
+          throw new Error("Expected 'Priya Sharma' in authenticated header!");
+        }
+        if (priyaHeaderText.includes('Aarav Patel')) {
+          throw new Error("Violation: 'Aarav Patel' detected in Priya's authenticated session!");
+        }
+
+        const priyaPath = path.join(ARTIFACT_DIR, 'auth_06_priya_logged_in.png');
+        await page.screenshot({ path: priyaPath, fullPage: true });
+        console.log(`[E2E Auth Test] Saved: ${priyaPath}`);
+
+        // 7. Log out Priya
+        console.log('[E2E Auth Test] 7. Logging out Priya Sharma...');
+        const priyaProfileBtn = await page.$('header button[title="Citizen Account"]');
+        if (priyaProfileBtn) {
+          await priyaProfileBtn.click();
+          await sleep(600);
+          const priyaLogoutBtn = await page.$('button::-p-text("Log Out")');
+          if (priyaLogoutBtn) {
+            await priyaLogoutBtn.click();
+            await sleep(1500);
+          }
+        }
       }
     }
 

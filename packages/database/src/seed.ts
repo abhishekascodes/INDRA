@@ -21,7 +21,7 @@ async function seedAuthAccounts(database: any) {
   if (!priyaAccount) {
     await database.insert(schema.userAccounts).values({
       email: 'priya.sharma@example.in',
-      passwordHash: hashPassword('Password123!'),
+      passwordHash: await hashPassword('Password123!'),
       citizenId: PRIYA_SHARMA_ID,
       accountStatus: 'ACTIVE',
       syntheticVerificationStatus: 'VERIFIED',
@@ -33,7 +33,7 @@ async function seedAuthAccounts(database: any) {
   if (!aaravAccount) {
     await database.insert(schema.userAccounts).values({
       email: 'aarav.patel@example.in',
-      passwordHash: hashPassword('Password123!'),
+      passwordHash: await hashPassword('Password123!'),
       citizenId: AARAV_PATEL_ID,
       accountStatus: 'ACTIVE',
       syntheticVerificationStatus: 'VERIFIED',

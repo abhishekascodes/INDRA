@@ -7,6 +7,7 @@ import {
   PRIYA_SHARMA_ID,
   AARAV_PATEL_ID,
   hashSessionToken,
+  hashPassword,
   verifyPassword,
   eq,
   and,
@@ -27,14 +28,14 @@ describe('INDRA Citizen Authentication, Session Security & Tenant Scoping Suite'
   });
 
   describe('1. Cryptographic Storage & Password Hashing Verification', () => {
-    it('stores seeded user account passwords using scrypt hashes, never in plaintext', async () => {
+    it('stores seeded user account passwords using Argon2id memory-hard hashes, never in plaintext', async () => {
       const db = await getDb();
       const accounts = await db.select().from(schema.userAccounts);
 
       expect(accounts.length).toBeGreaterThanOrEqual(2);
       for (const account of accounts) {
         expect(account.passwordHash).not.toBe('Password123!');
-        expect(account.passwordHash).toMatch(/^[0-9a-f]{32}:[0-9a-f]{128}$/); // salt:hash format
+        expect(account.passwordHash).toMatch(/^\$argon2id\$v=\d+\$m=\d+,t=\d+,p=\d+\$[^\$]+\$[^\$]+$/);
         const verified = await verifyPassword('Password123!', account.passwordHash);
         expect(verified).toBe(true);
       }
@@ -50,6 +51,127 @@ describe('INDRA Citizen Authentication, Session Security & Tenant Scoping Suite'
       expect(aarav.length).toBe(1);
       expect(aarav[0].syntheticChallengeHash).not.toBe('4567');
       expect(aarav[0].syntheticChallengeHash?.length).toBe(64); // sha-256 hex
+    });
+  });
+
+  describe('1b. Modern Memory-Hard Password KDF (Argon2id) Verification Suite', () => {
+    it('correct password -> verifies successfully', async () => {
+      const hash = await hashPassword('CorrectPassword123!');
+      const isValid = await verifyPassword('CorrectPassword123!', hash);
+      expect(isValid).toBe(true);
+    });
+
+    it('incorrect password -> rejected', async () => {
+      const hash = await hashPassword('CorrectPassword123!');
+      const isValid = await verifyPassword('WrongPassword!', hash);
+      expect(isValid).toBe(false);
+    });
+
+    it('duplicate account -> rejected on signup with 409', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/signup',
+        payload: {
+          email: 'aarav.patel@example.in',
+          password: 'AnotherPassword123!',
+          fullName: 'Duplicate Aarav',
+          syntheticChallenge: '4567',
+        },
+      });
+      expect(res.statusCode).toBe(409);
+      expect(JSON.parse(res.body).code).toBe('EMAIL_ALREADY_EXISTS');
+    });
+
+    it('malformed password -> rejected on signup with 400', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/signup',
+        payload: {
+          email: 'malformed@example.in',
+          password: 'tiny',
+          fullName: 'Malformed Password User',
+          syntheticChallenge: '1234',
+        },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('seeded evaluator accounts -> authenticate successfully with Argon2id', async () => {
+      const resAarav = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: {
+          email: 'aarav.patel@example.in',
+          password: 'Password123!',
+        },
+      });
+      expect(resAarav.statusCode).toBe(200);
+      expect(JSON.parse(resAarav.body).citizen.id).toBe(AARAV_PATEL_ID);
+
+      const resPriya = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: {
+          email: 'priya.sharma@example.in',
+          password: 'Password123!',
+        },
+      });
+      expect(resPriya.statusCode).toBe(200);
+      expect(JSON.parse(resPriya.body).citizen.id).toBe(PRIYA_SHARMA_ID);
+    });
+
+    it('newly created account -> stored with Argon2id and authenticates immediately', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/signup',
+        payload: {
+          email: 'kdf.eval@example.in',
+          password: 'ModernArgon2id123!',
+          fullName: 'KDF Evaluator',
+          city: 'Pune',
+          state: 'Maharashtra',
+          syntheticChallenge: '9988',
+        },
+      });
+      expect(res.statusCode).toBe(201);
+
+      const db = await getDb();
+      const users = await db
+        .select()
+        .from(schema.userAccounts)
+        .where(eq(schema.userAccounts.email, 'kdf.eval@example.in'));
+
+      expect(users.length).toBe(1);
+      expect(users[0].passwordHash).toMatch(/^\$argon2id\$v=\d+\$m=\d+,t=\d+,p=\d+\$[^\$]+\$[^\$]+$/);
+
+      // Verify immediate login
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: {
+          email: 'kdf.eval@example.in',
+          password: 'ModernArgon2id123!',
+        },
+      });
+      expect(loginRes.statusCode).toBe(200);
+    });
+
+    it('password hash not equal to plaintext for all accounts', async () => {
+      const plainPassword = 'PlaintextPassword123!';
+      const hash = await hashPassword(plainPassword);
+      expect(hash).not.toBe(plainPassword);
+      expect(hash).not.toContain(plainPassword);
+    });
+
+    it('distinct salts produce distinct stored hashes for identical passwords', async () => {
+      const pass = 'IdenticalPassword123!';
+      const hashA = await hashPassword(pass);
+      const hashB = await hashPassword(pass);
+
+      expect(hashA).not.toBe(hashB);
+      // Both verify with the same password
+      expect(await verifyPassword(pass, hashA)).toBe(true);
+      expect(await verifyPassword(pass, hashB)).toBe(true);
     });
   });
 
