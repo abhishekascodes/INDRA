@@ -1726,11 +1726,17 @@ export async function buildApp() {
     await server.register(fastifyStatic, {
       root: webDistPath,
       prefix: '/',
+      setHeaders: (res) => {
+        res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.header('Pragma', 'no-cache');
+        res.header('Expires', '0');
+      },
     });
     server.setNotFoundHandler(async (request, reply) => {
       if (request.raw.url && request.raw.url.startsWith('/api')) {
         return reply.status(404).send({ error: 'Endpoint not found' });
       }
+      reply.header('Cache-Control', 'no-cache, no-store, must-revalidate');
       return reply.sendFile('index.html');
     });
   }
