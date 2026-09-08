@@ -26,6 +26,7 @@ import {
   fetchAuthMe,
   logout,
   resetSyntheticWorkspace,
+  setActiveCitizenId,
 } from './api.js';
 
 export function App() {
@@ -135,6 +136,9 @@ export function App() {
   }, [loadData]);
 
   const handleAuthenticated = (user: any, authCitizen: any) => {
+    if (authCitizen?.id) {
+      setActiveCitizenId(authCitizen.id);
+    }
     setAuthState({
       isLoading: false,
       authenticated: true,
@@ -151,6 +155,7 @@ export function App() {
     } catch {
       // ignore
     }
+    setActiveCitizenId(null);
     setAuthState({
       isLoading: false,
       authenticated: false,

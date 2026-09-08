@@ -7,11 +7,20 @@ import type {
 
 const API_BASE = '/api';
 
-let activeCitizenId: string | null = localStorage.getItem('indra_active_citizen_id');
+let activeCitizenId: string | null = null;
+try {
+  activeCitizenId = typeof window !== 'undefined' ? localStorage.getItem('indra_active_citizen_id') : null;
+} catch {}
 
-export function setActiveCitizenId(id: string) {
+export function setActiveCitizenId(id: string | null) {
   activeCitizenId = id;
-  localStorage.setItem('indra_active_citizen_id', id);
+  try {
+    if (id) {
+      localStorage.setItem('indra_active_citizen_id', id);
+    } else {
+      localStorage.removeItem('indra_active_citizen_id');
+    }
+  } catch {}
 }
 
 export function getActiveCitizenId(): string | null {
@@ -48,11 +57,19 @@ export interface AuthMeResponse {
 
 export async function fetchAuthMe(): Promise<AuthMeResponse> {
   const res = await apiFetch(`${API_BASE}/auth/me`);
-  if (!res.ok) return { authenticated: false, user: null, citizen: null };
-  return res.json();
+  if (!res.ok) {
+    setActiveCitizenId(null);
+    return { authenticated: false, user: null, citizen: null };
+  }
+  const data = await res.json();
+  if (data.citizen?.id) {
+    setActiveCitizenId(data.citizen.id);
+  }
+  return data;
 }
 
 export async function login(credentials: { email: string; password: string }) {
+  setActiveCitizenId(null);
   const res = await apiFetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -61,6 +78,9 @@ export async function login(credentials: { email: string; password: string }) {
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.error || 'Failed to sign in');
+  }
+  if (data.citizen?.id) {
+    setActiveCitizenId(data.citizen.id);
   }
   return data;
 }
@@ -73,6 +93,7 @@ export async function signup(payload: {
   state?: string;
   syntheticChallenge: string;
 }) {
+  setActiveCitizenId(null);
   const res = await apiFetch(`${API_BASE}/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -82,10 +103,14 @@ export async function signup(payload: {
   if (!res.ok) {
     throw new Error(data.error || 'Failed to create citizen account');
   }
+  if (data.citizen?.id) {
+    setActiveCitizenId(data.citizen.id);
+  }
   return data;
 }
 
 export async function logout() {
+  setActiveCitizenId(null);
   const res = await apiFetch(`${API_BASE}/auth/logout`, {
     method: 'POST',
   });
@@ -94,9 +119,6 @@ export async function logout() {
 
 function getHeaders(customHeaders: Record<string, string> = {}): Record<string, string> {
   const headers: Record<string, string> = { ...customHeaders };
-  if (activeCitizenId) {
-    headers['x-citizen-id'] = activeCitizenId;
-  }
   return headers;
 }
 

@@ -6,7 +6,7 @@ import {
   AlertCircleIcon,
   ArrowRightIcon,
 } from '../icons.js';
-import { login, signup } from '../../api.js';
+import { login, signup, setActiveCitizenId } from '../../api.js';
 
 interface IndraAuthPortalProps {
   onAuthenticated: (user: any, citizen: any) => void;
@@ -24,6 +24,9 @@ export function IndraAuthPortal({ onAuthenticated }: IndraAuthPortalProps) {
   const [error, setError] = useState<string | null>(null);
 
   const handleDirectDemoLogin = async (demoEmail: string, demoPass: string) => {
+    try {
+      localStorage.removeItem('indra_active_citizen_id');
+    } catch {}
     setEmail(demoEmail);
     setPassword(demoPass);
     setError(null);
@@ -32,6 +35,7 @@ export function IndraAuthPortal({ onAuthenticated }: IndraAuthPortalProps) {
     try {
       const res = await login({ email: demoEmail, password: demoPass });
       if (res.success && res.citizen) {
+        if (res.citizen.id) setActiveCitizenId(res.citizen.id);
         onAuthenticated(res.user, res.citizen);
       } else {
         throw new Error(res.error || 'Authentication failed');
@@ -55,6 +59,7 @@ export function IndraAuthPortal({ onAuthenticated }: IndraAuthPortalProps) {
         }
         const res = await login({ email, password });
         if (res.success && res.citizen) {
+          if (res.citizen.id) setActiveCitizenId(res.citizen.id);
           onAuthenticated(res.user, res.citizen);
         } else {
           throw new Error(res.error || 'Authentication failed');
@@ -78,6 +83,7 @@ export function IndraAuthPortal({ onAuthenticated }: IndraAuthPortalProps) {
           syntheticChallenge: syntheticChallenge.trim(),
         });
         if (res.success && res.citizen) {
+          if (res.citizen.id) setActiveCitizenId(res.citizen.id);
           onAuthenticated(res.user, res.citizen);
         } else {
           throw new Error(res.error || 'Registration failed');
