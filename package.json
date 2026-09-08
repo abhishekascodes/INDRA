@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
     "build": "npx -y pnpm -r build",
+    "start": "node apps/api/dist/server.js",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint"
   },
