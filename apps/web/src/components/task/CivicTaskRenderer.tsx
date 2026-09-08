@@ -440,43 +440,116 @@ export function CivicTaskRenderer({
 
           {/* SECTION F: STATUTORY DECLARATIONS & CONSENT */}
           {descriptor.declarations.length > 0 && (
-            <section className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#475569]">
-                Review & Agree to Declarations
-              </h4>
+            <section className="space-y-3 pt-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center space-x-2">
+                  <ShieldCheckIcon className="w-4 h-4 text-indigo-600" />
+                  <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-[#0F172A]">
+                    Statutory Citizen Declaration
+                  </h4>
+                </div>
+                <div>
+                  {allDeclarationsAccepted ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-2xs">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                      <span>Ready to Submit</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-amber-600" />
+                      <span>Action Required · Check to Agree</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
               <div className="space-y-3">
                 {descriptor.declarations.map((decl: CivicTaskDeclaration) => {
                   const isAccepted = acceptedDeclarations.includes(decl.id);
                   return (
-                    <label
+                    <div
                       key={decl.id}
+                      role="checkbox"
+                      aria-checked={isAccepted}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if ((e.key === ' ' || e.key === 'Enter') && !isBlocked) {
+                          e.preventDefault();
+                          toggleDeclaration(decl.id);
+                        }
+                      }}
                       onClick={() => !isBlocked && toggleDeclaration(decl.id)}
-                      className={`flex items-start space-x-3.5 p-4 rounded-xl border transition cursor-pointer ${
+                      className={`group relative flex items-start space-x-4 p-5 sm:p-6 rounded-2xl border-2 transition-all duration-200 cursor-pointer select-none shadow-xs ${
                         isBlocked
-                          ? 'bg-slate-50 border-[#E2E8F0] cursor-not-allowed opacity-60'
+                          ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-60'
                           : isAccepted
-                          ? 'bg-emerald-50/60 border-emerald-400 shadow-2xs'
-                          : 'bg-white border-[#CBD5E1] hover:border-[#94A3B8] shadow-2xs'
+                          ? 'bg-emerald-50/80 border-emerald-500 border-l-6 border-l-emerald-600 ring-2 ring-emerald-500/10'
+                          : 'bg-gradient-to-r from-amber-50/60 via-white to-amber-50/20 border-amber-300/90 border-l-6 border-l-amber-500 hover:border-slate-400 hover:shadow-md'
                       }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isAccepted}
-                        disabled={isBlocked}
-                        onChange={() => {}}
-                        className="w-4 h-4 mt-1 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                      />
-                      <div className="space-y-1">
-                        <p className="text-xs sm:text-sm font-medium text-[#0F172A] leading-relaxed">
+                      {/* Prominent Custom Checkbox Control */}
+                      <div className="pt-0.5 shrink-0">
+                        <div
+                          className={`w-7 h-7 rounded-xl flex items-center justify-center border-2 transition-all duration-200 shadow-xs ${
+                            isAccepted
+                              ? 'bg-emerald-600 border-emerald-600 text-white ring-4 ring-emerald-100 scale-105'
+                              : 'bg-white border-slate-400 group-hover:border-[#0F172A] group-hover:scale-110 ring-4 ring-transparent group-hover:ring-slate-100'
+                          }`}
+                        >
+                          {isAccepted ? (
+                            <svg className="w-4.5 h-4.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <polyline points="20 6 9 17 4 12" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          ) : (
+                            <span className="w-2.5 h-2.5 rounded-full bg-slate-300 group-hover:bg-slate-500 transition-colors" />
+                          )}
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={isAccepted}
+                          disabled={isBlocked}
+                          onChange={() => {}}
+                          className="sr-only"
+                          tabIndex={-1}
+                          aria-hidden="true"
+                        />
+                      </div>
+
+                      {/* Declaration Content */}
+                      <div className="space-y-2 flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                            isAccepted ? 'text-emerald-800' : 'text-amber-800'
+                          }`}>
+                            {isAccepted ? (
+                              <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                                <span>Confirmed Statutory Declaration</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-ping" />
+                                <span>Mandatory Confirmation · Click to Agree</span>
+                              </>
+                            )}
+                          </span>
+                          <span className="text-2xs font-bold text-[#64748B] hidden sm:inline">
+                            {isAccepted ? 'Click anywhere to change' : 'Click box or card to confirm'}
+                          </span>
+                        </div>
+
+                        <p className="text-sm sm:text-base font-semibold text-[#0F172A] leading-relaxed">
                           {decl.text}
                         </p>
+
                         {decl.statutoryReference && (
-                          <p className="text-2xs font-semibold text-emerald-800">
-                            Official Rule: {decl.statutoryReference}
-                          </p>
+                          <div className="flex items-center gap-1.5 pt-1 text-xs font-bold text-emerald-800 bg-white/70 px-2.5 py-1 rounded-lg border border-emerald-200/80 w-fit">
+                            <ShieldCheckIcon className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>Official Statutory Rule: {decl.statutoryReference}</span>
+                          </div>
                         )}
                       </div>
-                    </label>
+                    </div>
                   );
                 })}
               </div>

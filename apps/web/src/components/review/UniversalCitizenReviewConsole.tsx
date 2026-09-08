@@ -445,30 +445,71 @@ export function UniversalCitizenReviewConsole({
             </h4>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {session.statutoryDeclarations.map((decl, idx) => {
               const isChecked = acceptedDeclarations.includes(decl.id);
               return (
-                <label
+                <div
                   key={decl.id}
-                  className="flex items-start space-x-3 p-3 rounded-xl bg-white border border-[#CBD5E1] hover:border-indigo-500 transition cursor-pointer select-none"
+                  role="checkbox"
+                  aria-checked={isChecked}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault();
+                      toggleDeclaration(decl.id);
+                    }
+                  }}
+                  onClick={() => toggleDeclaration(decl.id)}
+                  className={`group relative flex items-start space-x-3.5 p-4 sm:p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer select-none shadow-xs ${
+                    isChecked
+                      ? 'bg-emerald-50/80 border-emerald-500 border-l-6 border-l-emerald-600 ring-2 ring-emerald-500/10'
+                      : 'bg-gradient-to-r from-amber-50/60 via-white to-amber-50/20 border-amber-300/90 border-l-6 border-l-amber-500 hover:border-slate-400 hover:shadow-md'
+                  }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleDeclaration(decl.id)}
-                    className="w-4 h-4 mt-0.5 rounded text-indigo-600 focus:ring-0 cursor-pointer"
-                  />
-                  <div className="text-sm text-[#0F172A] leading-relaxed">
-                    <span className="font-bold text-[#475569] mr-1">Declaration {idx + 1}:</span>
-                    <span>{decl.text}</span>
-                    {decl.required && (
-                      <span className="ml-1.5 text-rose-600 font-bold text-xs uppercase">
-                        (Required)
-                      </span>
-                    )}
+                  <div className="pt-0.5 shrink-0">
+                    <div
+                      className={`w-7 h-7 rounded-xl flex items-center justify-center border-2 transition-all duration-200 shadow-xs ${
+                        isChecked
+                          ? 'bg-emerald-600 border-emerald-600 text-white ring-4 ring-emerald-100 scale-105'
+                          : 'bg-white border-slate-400 group-hover:border-[#0F172A] group-hover:scale-110 ring-4 ring-transparent group-hover:ring-slate-100'
+                      }`}
+                    >
+                      {isChecked ? (
+                        <svg className="w-4.5 h-4.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <polyline points="20 6 9 17 4 12" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ) : (
+                        <span className="w-2.5 h-2.5 rounded-full bg-slate-300 group-hover:bg-slate-500 transition-colors" />
+                      )}
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {}}
+                      className="sr-only"
+                      tabIndex={-1}
+                      aria-hidden="true"
+                    />
                   </div>
-                </label>
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-xs font-black uppercase tracking-wider ${
+                        isChecked ? 'text-emerald-800' : 'text-amber-800'
+                      }`}>
+                        {isChecked ? '✓ Confirmed' : `Declaration ${idx + 1} · Click to Confirm`}
+                      </span>
+                      {decl.required && !isChecked && (
+                        <span className="text-2xs font-extrabold uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                          Mandatory
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm sm:text-base font-semibold text-[#0F172A] leading-relaxed">
+                      {decl.text}
+                    </p>
+                  </div>
+                </div>
               );
             })}
           </div>
