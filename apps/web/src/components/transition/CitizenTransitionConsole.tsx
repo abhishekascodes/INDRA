@@ -74,26 +74,15 @@ export function CitizenTransitionConsole({
       setRecentTransitions(list);
       if (list.length > 0) {
         setActiveTransition(list[0]);
-      } else {
-        // Auto-initiate flagship transition
-        const transition = await initiateTransition(query, {
-          destinationCity: 'Bengaluru',
-          destinationState: 'Karnataka',
-          surveyNumber: '142/3',
-          village: 'Devanahalli',
-        });
-        setRecentTransitions([transition]);
-        setActiveTransition(transition);
       }
     } catch (err: any) {
       console.warn('Could not load existing transitions:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [query]);
+  }, []);
 
   useEffect(() => {
-    setActiveTransition(null);
     loadTransitions();
     checkSimulationStatus();
   }, [citizen?.id, checkSimulationStatus, loadTransitions]);
@@ -111,7 +100,7 @@ export function CitizenTransitionConsole({
         village: 'Devanahalli',
       });
       setActiveTransition(transition);
-      await loadTransitions();
+      setRecentTransitions((prev) => [transition, ...prev.filter((t) => t.id !== transition.id)]);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to evaluate civic transition');
     } finally {
@@ -130,7 +119,7 @@ export function CitizenTransitionConsole({
         'RESOLVE'
       );
       setActiveTransition(updated);
-      await loadTransitions();
+      setRecentTransitions((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to resolve discrepancy');
     } finally {
@@ -152,7 +141,7 @@ export function CitizenTransitionConsole({
       // Trigger execution loop
       const executed = await executeTransition(activeTransition.id);
       setActiveTransition(executed);
-      await loadTransitions();
+      setRecentTransitions((prev) => prev.map((t) => (t.id === executed.id ? executed : t)));
       if (onRefreshCitizen && executed.state === 'COMPLETED') {
         onRefreshCitizen();
       }
@@ -179,7 +168,7 @@ export function CitizenTransitionConsole({
       }
       const resumed = await resumeTransition(activeTransition.id);
       setActiveTransition(resumed);
-      await loadTransitions();
+      setRecentTransitions((prev) => prev.map((t) => (t.id === resumed.id ? resumed : t)));
       if (onRefreshCitizen && resumed.state === 'COMPLETED') {
         onRefreshCitizen();
       }

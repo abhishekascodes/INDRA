@@ -194,7 +194,10 @@ export async function buildApp() {
       if (origin && host) {
         try {
           const originHost = new URL(origin).host;
-          if (originHost !== host) {
+          const isLocalDev =
+            (originHost.startsWith('localhost') || originHost.startsWith('127.0.0.1')) &&
+            (host.startsWith('localhost') || host.startsWith('127.0.0.1'));
+          if (originHost !== host && !isLocalDev) {
             await logAuthEvent(
               'CSRF_VIOLATION_ATTEMPT',
               'FAILURE',
