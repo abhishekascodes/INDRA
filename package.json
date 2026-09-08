@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
-    "build": "npm --prefix apps/web install && npm --prefix apps/web run build",
-    "build:all": "pnpm -r build",
+    "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint"
   },
