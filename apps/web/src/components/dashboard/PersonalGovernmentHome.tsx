@@ -28,7 +28,7 @@ interface PersonalGovernmentHomeProps {
   citizen: any;
   applications: any[];
   onLaunchWorkflow: (workflowCode: string, initialContext?: Record<string, unknown>) => void;
-  onSelectTab: (tab: 'home' | 'world-model' | 'action-plans' | 'inbox' | 'vault' | 'trust') => void;
+  onSelectTab: (tab: 'home' | 'world-model' | 'action-plans' | 'transitions' | 'inbox' | 'vault' | 'trust') => void;
 }
 
 export function PersonalGovernmentHome({
@@ -143,12 +143,12 @@ export function PersonalGovernmentHome({
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* 1. GREETING & STATUS */}
-      <div className="flex items-center justify-between pb-1">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] tracking-tight">
-          Good morning, {name.split(' ')[0]}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3.5">
+        <h1 className="text-3xl sm:text-[42px] font-black text-[#0F172A] tracking-tight leading-tight">
+          Good morning, {name.split(' ')[0]}. What do you need to get done today?
         </h1>
 
-        <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0]">
+        <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0] shrink-0">
           <ShieldCheckIcon className="w-3.5 h-3.5 mr-1.5 text-[#059669]" />
           <span>Verified Citizen</span>
         </div>
@@ -211,16 +211,26 @@ export function PersonalGovernmentHome({
                     ))}
                   </div>
 
-                  <div className="pt-2 flex justify-end">
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-end gap-2.5">
                     <button
                       onClick={() => {
                         setTransitionIntent(null);
                         onSelectTab('action-plans');
                       }}
-                      className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-xs flex items-center space-x-2 cursor-pointer"
+                      className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
                     >
-                      <span>Open Inter-State Relocation Action Plan</span>
-                      <ArrowRightIcon className="w-4 h-4 ml-1" />
+                      <span>View Action Plan</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setTransitionIntent(null);
+                        onSelectTab('transitions');
+                      }}
+                      className="w-full sm:w-auto px-6 py-2.5 bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center space-x-1.5 cursor-pointer"
+                    >
+                      <span>Coordinate Life Transition</span>
+                      <ArrowRightIcon className="w-3.5 h-3.5 ml-0.5" />
                     </button>
                   </div>
                 </div>

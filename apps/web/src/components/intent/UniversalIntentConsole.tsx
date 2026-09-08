@@ -8,6 +8,7 @@ import {
   BriefcaseIcon,
   PhoneIcon,
   ShieldCheckIcon,
+  MapPinIcon,
 } from '../icons.js';
 import { resolveIntent } from '../../api.js';
 import { formatHumanLabel } from '../../utils/civicFormatters.js';
@@ -266,15 +267,15 @@ export function UniversalIntentConsole({
 
       {/* POPULAR INTENT QUICK LAUNCH CHIPS */}
       <div className="mt-4 flex flex-wrap items-center gap-2.5 text-sm">
-        <span className="text-[#64748B] font-bold mr-1 text-xs uppercase tracking-wider">Popular:</span>
+        <span className="text-[#64748B] font-bold mr-1 text-xs uppercase tracking-wider">TRY SAYING:</span>
 
         <button
           type="button"
-          onClick={() => handleChipClick('I want to start a private limited company')}
+          onClick={() => handleChipClick('I moved to Bangalore and bought a plot in Devanahalli')}
           className="px-4 py-2 bg-white hover:bg-[#F8FAFC] border border-[#CBD5E1] hover:border-[#94A3B8] rounded-xl text-[#334155] font-medium transition shadow-2xs cursor-pointer flex items-center space-x-2"
         >
-          <BuildingIcon className="w-4 h-4 text-[#64748B]" />
-          <span>Start a company</span>
+          <MapPinIcon className="w-4 h-4 text-[#64748B]" />
+          <span>I moved to Bangalore & bought a plot</span>
         </button>
 
         <button
@@ -291,15 +292,6 @@ export function UniversalIntentConsole({
 
         <button
           type="button"
-          onClick={() => handleChipClick('I lost my phone and need emergency block')}
-          className="px-4 py-2 bg-white hover:bg-[#F8FAFC] border border-[#CBD5E1] hover:border-[#94A3B8] rounded-xl text-[#334155] font-medium transition shadow-2xs cursor-pointer flex items-center space-x-2"
-        >
-          <PhoneIcon className="w-4 h-4 text-[#64748B]" />
-          <span>Lost / stolen phone</span>
-        </button>
-
-        <button
-          type="button"
           onClick={() => handleChipClick('Fix name discrepancy between PAN and Aadhaar')}
           className="px-4 py-2 bg-white hover:bg-[#F8FAFC] border border-[#CBD5E1] hover:border-[#94A3B8] rounded-xl text-[#334155] font-medium transition shadow-2xs cursor-pointer flex items-center space-x-2"
         >
@@ -309,10 +301,20 @@ export function UniversalIntentConsole({
 
         <button
           type="button"
-          onClick={() => handleChipClick('I moved to Bengaluru and need to update records')}
+          onClick={() => handleChipClick('I want to start a private limited company')}
           className="px-4 py-2 bg-white hover:bg-[#F8FAFC] border border-[#CBD5E1] hover:border-[#94A3B8] rounded-xl text-[#334155] font-medium transition shadow-2xs cursor-pointer flex items-center space-x-2"
         >
-          <span>I moved to Bengaluru</span>
+          <BuildingIcon className="w-4 h-4 text-[#64748B]" />
+          <span>Start a company</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleChipClick('I lost my phone and need emergency block')}
+          className="px-4 py-2 bg-white hover:bg-[#F8FAFC] border border-[#CBD5E1] hover:border-[#94A3B8] rounded-xl text-[#334155] font-medium transition shadow-2xs cursor-pointer flex items-center space-x-2"
+        >
+          <PhoneIcon className="w-4 h-4 text-[#64748B]" />
+          <span>Lost / stolen phone</span>
         </button>
       </div>
     </section>
