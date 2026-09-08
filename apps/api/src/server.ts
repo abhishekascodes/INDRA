@@ -781,8 +781,15 @@ export async function buildApp() {
       });
       return summary;
     } catch (err: any) {
-      request.log.error(err);
-      return reply.status(500).send({ error: err?.message || 'Failed to start workflow' });
+      request.log.warn(err, 'Workflow start rejected due to domain precondition');
+      if (err?.message?.includes('not registered') || err?.message?.includes('not found')) {
+        return reply.status(404).send({ error: err?.message || 'Workflow not found' });
+      }
+      const isDomainPrecondition =
+        err?.message?.includes('No dormant') ||
+        err?.message?.includes('invalid');
+      const statusCode = isDomainPrecondition ? 400 : 500;
+      return reply.status(statusCode).send({ error: err?.message || 'Failed to start workflow' });
     }
   });
 

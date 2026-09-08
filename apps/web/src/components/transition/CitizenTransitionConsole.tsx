@@ -433,7 +433,7 @@ export function CitizenTransitionConsole({
                 <div className="text-2xs text-[#64748B]">
                   Holder: {citizen?.primaryName || 'Verified Citizen'}
                 </div>
-                <div className="text-2xs text-emerald-700 font-medium mt-1">✓ UIDAI Verified</div>
+                <div className="text-2xs text-emerald-700 font-medium mt-1">✓ UIDAI Verified (Synthetic)</div>
               </div>
 
               <div className="p-3 rounded-xl border border-[#E2E8F0] bg-white">
@@ -490,6 +490,10 @@ export function CitizenTransitionConsole({
                         <p className="text-2xs text-[#64748B] mt-0.5">
                           <span className="font-semibold">Requirement:</span> {c.whyItMatters}
                         </p>
+                        <div className="mt-1 flex items-center space-x-1.5 text-2xs text-slate-500 font-medium">
+                          <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold uppercase text-[9px] border border-slate-200">Synthetic Prototype</span>
+                          <span>Reconciled using simulated test identity · No live biometric data or official UIDAI integration.</span>
+                        </div>
                       </div>
                     </div>
 
@@ -501,7 +505,7 @@ export function CitizenTransitionConsole({
                         className="px-4 py-2 rounded-xl bg-[#0F172A] hover:bg-black text-white text-xs font-semibold transition cursor-pointer disabled:opacity-50 shrink-0 flex items-center space-x-1.5"
                       >
                         <CheckIcon className="w-3.5 h-3.5" />
-                        <span>Confirm Name Match via Aadhaar Biometrics</span>
+                        <span>Confirm Name Match via Aadhaar Biometrics (Synthetic Demo)</span>
                       </button>
                     )}
                   </div>
