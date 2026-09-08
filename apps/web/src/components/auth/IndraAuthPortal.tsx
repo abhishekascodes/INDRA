@@ -7,6 +7,7 @@ import {
   UserIcon,
   CheckIcon,
   InfoIcon,
+  ChevronDownIcon,
 } from '../icons.js';
 import { login, signup } from '../../api.js';
 
@@ -24,6 +25,7 @@ export function IndraAuthPortal({ onAuthenticated }: IndraAuthPortalProps) {
   const [syntheticChallenge, setSyntheticChallenge] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showEvaluationAccess, setShowEvaluationAccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -302,54 +304,74 @@ export function IndraAuthPortal({ onAuthenticated }: IndraAuthPortalProps) {
                 </button>
               </div>
             </form>
-
-            {/* Evaluation Test Credentials Hint Card */}
-            {mode === 'login' && (
-              <div className="px-6 py-4 bg-[#F8FAFC] border-t border-[#E2E8F0]">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold text-[#475569] uppercase tracking-wider flex items-center gap-1.5">
-                    <InfoIcon className="w-3.5 h-3.5 text-[#64748B]" />
-                    <span>Evaluation Test Accounts</span>
-                  </span>
-                  <span className="text-[10px] font-medium text-[#64748B]">
-                    Click to load credentials
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-left">
-                  <button
-                    type="button"
-                    onClick={() => handleFillDemo('aarav.patel@example.in', 'Password123!')}
-                    className="p-2.5 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#94A3B8] hover:shadow-xs transition-all text-left cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-xs font-bold text-[#0F172A] group-hover:text-blue-900">Aarav Patel</span>
-                      <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.2 rounded">
-                        Active
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-[#64748B] font-mono truncate">aarav.patel@example.in</div>
-                    <div className="text-[10px] text-[#94A3B8] font-mono">Password123!</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleFillDemo('priya.sharma@example.in', 'Password123!')}
-                    className="p-2.5 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#94A3B8] hover:shadow-xs transition-all text-left cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-xs font-bold text-[#0F172A] group-hover:text-blue-900">Priya Sharma</span>
-                      <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.2 rounded">
-                        Active
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-[#64748B] font-mono truncate">priya.sharma@example.in</div>
-                    <div className="text-[10px] text-[#94A3B8] font-mono">Password123!</div>
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
+
+          {/* Subtle Evaluator / Audit Access Control */}
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => setShowEvaluationAccess((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 text-xs text-[#64748B] hover:text-[#0F172A] font-medium transition-colors cursor-pointer select-none py-1 px-2.5 rounded-lg hover:bg-slate-100"
+            >
+              <InfoIcon className="w-3.5 h-3.5 text-[#94A3B8]" />
+              <span>Evaluation access</span>
+              <ChevronDownIcon
+                className={`w-3 h-3 text-[#94A3B8] transition-transform duration-200 ${
+                  showEvaluationAccess ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Expandable Documented Synthetic Credentials */}
+          {showEvaluationAccess && (
+            <div className="mt-3 p-4 bg-white rounded-2xl border border-[#CBD5E1] shadow-sm animate-fadeIn text-left">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="text-[11px] font-bold text-[#0F172A] uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldCheckIcon className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Documented Synthetic Test Credentials</span>
+                </div>
+                <span className="text-[10px] text-[#64748B]">Click to load</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-left">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleFillDemo('aarav.patel@example.in', 'Password123!');
+                    if (mode !== 'login') setMode('login');
+                  }}
+                  className="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#94A3B8] hover:bg-white transition-all text-left cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-xs font-bold text-[#0F172A] group-hover:text-blue-900">Aarav Patel</span>
+                    <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.2 rounded">
+                      Pre-seeded
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-[#64748B] font-mono truncate">aarav.patel@example.in</div>
+                  <div className="text-[10px] text-[#94A3B8] font-mono">Password123!</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleFillDemo('priya.sharma@example.in', 'Password123!');
+                    if (mode !== 'login') setMode('login');
+                  }}
+                  className="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#94A3B8] hover:bg-white transition-all text-left cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-xs font-bold text-[#0F172A] group-hover:text-blue-900">Priya Sharma</span>
+                    <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.2 rounded">
+                      Pre-seeded
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-[#64748B] font-mono truncate">priya.sharma@example.in</div>
+                  <div className="text-[10px] text-[#94A3B8] font-mono">Password123!</div>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* High-Trust Compliance & Security Footer */}
           <div className="mt-6 text-center space-y-2">

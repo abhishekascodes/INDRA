@@ -43,10 +43,24 @@ async function run() {
       throw new Error('Violation: Visible Quick-Login buttons detected on citizen portal!');
     }
 
-    // Capture Sign In Portal Screenshot
+    // Capture Sign In Portal Screenshot (Normal citizen experience)
     const signinPath = path.join(ARTIFACT_DIR, 'auth_01_portal_signin.png');
     await page.screenshot({ path: signinPath, fullPage: true });
-    console.log(`[E2E Auth Test] Saved: ${signinPath}`);
+    console.log(`[E2E Auth Test] Saved normal signin: ${signinPath}`);
+
+    // 1b. Test Evaluation Access Drawer (Judge / Auditor experience)
+    console.log('[E2E Auth Test] 1b. Opening subtle Evaluation Access drawer...');
+    const evalAccessBtn = await page.$('button::-p-text("Evaluation access")');
+    if (evalAccessBtn) {
+      await evalAccessBtn.click();
+      await sleep(500);
+      const evalPath = path.join(ARTIFACT_DIR, 'auth_01b_portal_evaluation_access.png');
+      await page.screenshot({ path: evalPath, fullPage: true });
+      console.log(`[E2E Auth Test] Saved evaluation access drawer: ${evalPath}`);
+      // Close it again
+      await evalAccessBtn.click();
+      await sleep(300);
+    }
 
     // 2. Switch to Create Citizen Account tab
     console.log('[E2E Auth Test] 2. Inspecting Create Citizen Account tab...');
