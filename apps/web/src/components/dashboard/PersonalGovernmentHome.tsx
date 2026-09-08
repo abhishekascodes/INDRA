@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { StructuredIntent } from '@indra/contracts';
 import { UniversalIntentConsole } from '../intent/UniversalIntentConsole.js';
-import { ProactiveFindingsBanner } from '../action-plans/ProactiveFindingsBanner.js';
 import {
   ShieldCheckIcon,
   AlertCircleIcon,
@@ -307,15 +306,7 @@ export function PersonalGovernmentHome({
         </div>
       )}
 
-      {/* 4. PROACTIVE FINDINGS BANNER */}
-      <ProactiveFindingsBanner
-        applications={applications}
-        onSelectActionPlan={() => onSelectTab('action-plans')}
-        onSelectWorkflow={onLaunchWorkflow}
-        onSelectTab={onSelectTab}
-      />
-
-      {/* 5. THINGS NEEDING ATTENTION */}
+      {/* 4. THINGS NEEDING ATTENTION */}
       {(() => {
         const isItrCompleted = applications.some(
           (a) =>
@@ -344,6 +335,11 @@ export function PersonalGovernmentHome({
             a.universalStatus === 'COMPLETED'
         );
 
+        const isAarav = citizen?.primaryName?.includes('Aarav');
+        const activeCount = isAarav
+          ? (isItrCompleted ? 1 : 2)
+          : ((isPfCompleted ? 0 : 1) + (isPassportCompleted ? 0 : 1));
+
         return (
           <section>
             <div className="flex items-center justify-between mb-4">
@@ -352,7 +348,21 @@ export function PersonalGovernmentHome({
                 <h2 className="text-sm font-bold tracking-wider uppercase text-[#475569]">
                   Things Needing Attention
                 </h2>
+                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                  activeCount === 0
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                    : 'bg-amber-50 text-amber-800 border-amber-300'
+                }`}>
+                  {activeCount === 0 ? 'All Clear' : `${activeCount} Priority ${activeCount === 1 ? 'Notice' : 'Notices'}`}
+                </span>
               </div>
+              <button
+                onClick={() => onSelectTab('inbox')}
+                className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 transition flex items-center gap-1 cursor-pointer"
+              >
+                <span>View All Notices in Action Center</span>
+                <ArrowRightIcon className="w-3.5 h-3.5" />
+              </button>
             </div>
 
             <div className="grid items-start grid-cols-1 md:grid-cols-2 gap-5">

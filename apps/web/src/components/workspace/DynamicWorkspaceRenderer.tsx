@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { WorkflowRunSummary, UIFieldDefinition } from '@indra/contracts';
 import {
   ShieldCheckIcon,
@@ -51,13 +51,41 @@ export function DynamicWorkspaceRenderer({
   onWorkflowUpdated,
   onExitWorkspace,
 }: DynamicWorkspaceRendererProps) {
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  const activeUI = workflowRun.activeUI;
+
+  const [formData, setFormData] = useState<Record<string, any>>(() => {
+    const initial: Record<string, any> = {};
+    if (workflowRun.activeUI?.requiredFields) {
+      for (const field of workflowRun.activeUI.requiredFields) {
+        if (field.defaultValue !== undefined && field.defaultValue !== '') {
+          initial[field.fieldId] = field.defaultValue;
+        }
+      }
+    }
+    return initial;
+  });
+
+  useEffect(() => {
+    if (activeUI?.requiredFields) {
+      setFormData((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        for (const field of activeUI.requiredFields!) {
+          if (next[field.fieldId] === undefined && field.defaultValue !== undefined && field.defaultValue !== '') {
+            next[field.fieldId] = field.defaultValue;
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }
+  }, [workflowRun.id, workflowRun.currentStepId, activeUI]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
   const [consentGranted, setConsentGranted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const activeUI = workflowRun.activeUI;
   const isAwaitingAuth = workflowRun.state === 'AWAITING_AUTHORIZATION';
   const isAwaitingInput = workflowRun.state === 'AWAITING_USER_INPUT';
   const isCompleted = workflowRun.state === 'COMPLETED';
@@ -75,7 +103,30 @@ export function DynamicWorkspaceRenderer({
     try {
       setIsSubmitting(true);
       setErrorMessage(null);
-      const updated = await resumeWorkflow(workflowRun.id, formData, authorize);
+
+      // Construct effective payload guaranteeing pre-filled default values
+      const effectiveData: Record<string, any> = {};
+      if (activeUI?.requiredFields) {
+        for (const field of activeUI.requiredFields) {
+          if (field.defaultValue !== undefined && field.defaultValue !== '') {
+            effectiveData[field.fieldId] = field.defaultValue;
+          }
+        }
+      }
+      Object.assign(effectiveData, formData);
+
+      // Validate required fields
+      if (activeUI?.requiredFields) {
+        for (const field of activeUI.requiredFields) {
+          if (field.required && (effectiveData[field.fieldId] === undefined || effectiveData[field.fieldId] === '')) {
+            setErrorMessage(`Please complete the required field: ${field.label}`);
+            setIsSubmitting(false);
+            return;
+          }
+        }
+      }
+
+      const updated = await resumeWorkflow(workflowRun.id, effectiveData, authorize);
       onWorkflowUpdated(updated);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to advance workflow');
@@ -223,6 +274,13 @@ export function DynamicWorkspaceRenderer({
             Required Action Details
           </h3>
 
+          {errorMessage && (
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center space-x-2">
+              <AlertCircleIcon className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           <div className="space-y-4">
             {activeUI.requiredFields.map((field: UIFieldDefinition) => (
               <div key={field.fieldId} className="space-y-1.5">
@@ -234,7 +292,7 @@ export function DynamicWorkspaceRenderer({
                 {field.type === 'TEXT_INPUT' && (
                   <input
                     type="text"
-                    defaultValue={field.defaultValue as string}
+                    value={formData[field.fieldId] !== undefined ? formData[field.fieldId] : ((field.defaultValue as string) || '')}
                     placeholder={(field.props?.placeholder as string) || ''}
                     onChange={(e) => handleFieldChange(field.fieldId, e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-[#CBD5E1] text-sm text-[#0F172A] focus:outline-none focus:border-[#0F172A] focus:ring-2 focus:ring-[#0F172A]/10 bg-white"
