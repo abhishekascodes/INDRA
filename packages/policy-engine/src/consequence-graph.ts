@@ -874,7 +874,7 @@ export const RELOCATION_PROPERTY_ACQUISITION_GRAPH: ConsequenceGraphDefinition =
         citizenId: wm.profile.id,
         registrationNumber: wm.vehicles[0]?.registrationNumber || 'MH-12-DE-9102',
         destinationState: ctx.destinationState || 'Karnataka',
-        destinationRto: ctx.destinationRto || 'KA-50 (Yelahanka / Devanahalli RTO)',
+        destinationRto: ctx.destinationRto || 'KA-50',
         destinationAddress: ctx.destinationAddress || `Plot 42, Survey No. ${ctx.surveyNumber || '142/3'}, Devanahalli, Bengaluru`,
       }),
     },

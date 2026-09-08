@@ -338,7 +338,7 @@ export const citizenVehicles = pgTable('citizen_vehicles', {
   chassisNumber: varchar('chassis_number', { length: 100 }).notNull(),
   vehicleClass: varchar('vehicle_class', { length: 50 }).notNull(), // MOTOR_CAR, TWO_WHEELER, COMMERCIAL_GOODS
   makerModel: varchar('maker_model', { length: 255 }).notNull(),
-  rtoCode: varchar('rto_code', { length: 20 }).notNull(),
+  rtoCode: varchar('rto_code', { length: 100 }).notNull(),
   state: varchar('state', { length: 100 }).notNull(),
   registrationDate: varchar('registration_date', { length: 20 }).notNull(),
   fitnessValidUntil: varchar('fitness_valid_until', { length: 20 }).notNull(),

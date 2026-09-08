@@ -345,7 +345,7 @@ async function initSchema(client: PGlite) {
       chassis_number VARCHAR(100) NOT NULL,
       vehicle_class VARCHAR(50) NOT NULL,
       maker_model VARCHAR(255) NOT NULL,
-      rto_code VARCHAR(20) NOT NULL,
+      rto_code VARCHAR(100) NOT NULL,
       state VARCHAR(100) NOT NULL,
       registration_date VARCHAR(20) NOT NULL,
       fitness_valid_until VARCHAR(20) NOT NULL,
@@ -787,5 +787,12 @@ async function initSchema(client: PGlite) {
       created_at TIMESTAMP NOT NULL DEFAULT NOW()
     );
   `);
+
+  // Safe schema migrations for existing databases
+  try {
+    await client.exec(`ALTER TABLE citizen_vehicles ALTER COLUMN rto_code TYPE VARCHAR(100);`);
+  } catch {
+    // Ignore if already applied or column not present
+  }
 }
 

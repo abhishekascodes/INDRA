@@ -98,6 +98,7 @@ export function Header({
         {/* 2. CENTER NAVIGATION TABS (Sleek, compact, zero wrapping) */}
         <nav className="flex items-center space-x-1 text-xs sm:text-sm font-semibold overflow-x-auto no-scrollbar py-1">
           <button
+            data-tab="home"
             onClick={() => onSelectTab('home')}
             className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'home'
@@ -110,6 +111,7 @@ export function Header({
           </button>
 
           <button
+            data-tab="records"
             onClick={() => onSelectTab('world-model')}
             className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'world-model'
@@ -122,6 +124,7 @@ export function Header({
           </button>
 
           <button
+            data-tab="action-plans"
             onClick={() => onSelectTab('action-plans')}
             className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'action-plans'
@@ -134,6 +137,7 @@ export function Header({
           </button>
 
           <button
+            data-tab="transitions"
             onClick={() => onSelectTab('transitions')}
             className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'transitions'
@@ -146,6 +150,7 @@ export function Header({
           </button>
 
           <button
+            data-tab="inbox"
             onClick={() => onSelectTab('inbox')}
             className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'inbox'
@@ -163,6 +168,7 @@ export function Header({
           </button>
 
           <button
+            data-tab="vault"
             onClick={() => onSelectTab('vault')}
             className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'vault'
@@ -175,6 +181,7 @@ export function Header({
           </button>
 
           <button
+            data-tab="trust"
             onClick={() => onSelectTab('trust')}
             className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'trust'

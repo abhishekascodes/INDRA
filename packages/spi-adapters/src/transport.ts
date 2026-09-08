@@ -121,11 +121,13 @@ export class TransportSpiAdapter {
     const previousRto = existing.rtoCode;
     const now = new Date();
 
+    const cleanRtoCode = (input.destinationRto || '').split(' ')[0].slice(0, 20) || 'KA-50';
+
     // Mutate state in MoRTH Vahan national ledger
     await db
       .update(schema.citizenVehicles)
       .set({
-        rtoCode: input.destinationRto,
+        rtoCode: cleanRtoCode,
         state: input.destinationState,
       })
       .where(
