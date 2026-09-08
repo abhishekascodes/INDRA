@@ -164,6 +164,9 @@ export const ActionPlanViewer: React.FC<ActionPlanViewerProps> = ({ citizen }) =
         );
         const title = res.executedStep?.title || 'Action step';
         setSuccessMsg(`Successfully authorized and registered: ${title}`);
+        if (res.executedStep) {
+          setActiveTaskStep(res.executedStep);
+        }
         return res.executedStep?.outputPayload || res.capabilityOutput || res;
       } else {
         await loadPlans();

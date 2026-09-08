@@ -1,5 +1,5 @@
 import { getDb, schema } from '@indra/database';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { WorkflowRegistry } from './registry.js';
 import { CapabilityRegistry, CapabilityExecutor } from '@indra/capability-engine';
 import { EventBus } from '@indra/event-bus';
@@ -511,7 +511,78 @@ export class WorkflowRunner {
       })
       .where(eq(schema.applications.workflowRunId, workflowRunId));
 
-    // 2. Publish domain event
+    // 2. Resolve matching proactive findings in database
+    try {
+      const findings = await db
+        .select()
+        .from(schema.proactiveFindings)
+        .where(eq(schema.proactiveFindings.citizenId, citizenId));
+
+      for (const f of findings) {
+        const matchesWorkflow =
+          f.recommendedWorkflowCode === workflow.code ||
+          (f.actionLink && (f.actionLink as any).targetCode === workflow.code) ||
+          (workflow.code === 'CHECK_ITR_STATUS' && f.ruleCode === 'RULE_ITR_FILING_DEADLINE') ||
+          (workflow.code === 'RECOVER_DORMANT_PF' && f.ruleCode === 'RULE_EPFO_DORMANT_BALANCE');
+
+        if (matchesWorkflow && f.status !== 'RESOLVED') {
+          await db
+            .update(schema.proactiveFindings)
+            .set({
+              status: 'RESOLVED',
+              resolvedAt: new Date(),
+              isDismissed: true,
+            })
+            .where(eq(schema.proactiveFindings.id, f.id));
+        }
+      }
+    } catch (err) {
+      console.warn('[WorkflowRunner] Failed to auto-resolve proactive findings:', err);
+    }
+
+    // 3. Reconcile specific domain registries
+    try {
+      if (workflow.code === 'CHECK_ITR_STATUS') {
+        await db
+          .update(schema.citizenStatutoryObligations)
+          .set({ status: 'COMPLETED' })
+          .where(
+            and(
+              eq(schema.citizenStatutoryObligations.citizenId, citizenId),
+              eq(schema.citizenStatutoryObligations.obligationType, 'ITR_FILING')
+            )
+          );
+      } else if (workflow.code === 'RECOVER_DORMANT_PF') {
+        await db
+          .update(schema.spiEpfoAccounts)
+          .set({ status: 'TRANSFERRED', pfBalance: 0 })
+          .where(
+            and(
+              eq(schema.spiEpfoAccounts.citizenId, citizenId),
+              eq(schema.spiEpfoAccounts.status, 'DORMANT')
+            )
+          );
+      }
+    } catch (err) {
+      console.warn('[WorkflowRunner] Failed to reconcile domain obligation:', err);
+    }
+
+    // 4. Resolve matching inbox items
+    try {
+      await db
+        .update(schema.governmentInbox)
+        .set({ isResolved: true, isRead: true })
+        .where(
+          and(
+            eq(schema.governmentInbox.citizenId, citizenId),
+            eq(schema.governmentInbox.workflowCode, workflow.code)
+          )
+        );
+    } catch (err) {
+      console.warn('[WorkflowRunner] Failed to auto-resolve inbox items:', err);
+    }
+
+    // 5. Publish domain events
     await this.eventBus.publish({
       eventId: `EVT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       eventType: 'WORKFLOW_COMPLETED',
@@ -521,6 +592,17 @@ export class WorkflowRunner {
       payload: { workflowCode: workflow.code, title: workflow.title },
       timestamp: new Date().toISOString(),
       provenance: { source: 'SYSTEM_OBSERVATION', correlationId: workflowRunId },
+    });
+
+    await this.eventBus.publish({
+      eventId: `EVT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      eventType: 'GOVERNMENT_INBOX_UPDATED',
+      citizenId,
+      aggregateType: 'CITIZEN',
+      aggregateId: citizenId,
+      payload: { workflowCode: workflow.code, action: 'COMPLETED' },
+      timestamp: new Date().toISOString(),
+      provenance: { source: 'AUTOMATED_RULE', correlationId: workflowRunId },
     });
   }
 

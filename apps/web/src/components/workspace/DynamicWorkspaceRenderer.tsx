@@ -13,6 +13,7 @@ import {
 import { resumeWorkflow } from '../../api.js';
 import { UniversalCitizenReviewConsole } from '../review/UniversalCitizenReviewConsole.js';
 import { CustomSelect } from '../common/CustomSelect.js';
+import { CivicCheckbox } from '../common/CivicCheckbox.js';
 import { formatHumanLabel, formatStateLabel } from '../../utils/civicFormatters.js';
 
 interface DynamicWorkspaceRendererProps {
@@ -249,6 +250,17 @@ export function DynamicWorkspaceRenderer({
                     value={String(formData[field.fieldId] ?? field.defaultValue ?? field.options[0]?.value ?? '')}
                     onChange={(val) => handleFieldChange(field.fieldId, val)}
                     placeholder="Choose an option..."
+                  />
+                )}
+
+                {((field.type as string) === 'CHECKBOX' || (field.type as string) === 'BOOLEAN' || field.type === 'ACTION_AUTHORIZATION' || field.type === 'IDENTITY_CONFIRMATION') && (
+                  <CivicCheckbox
+                    id={field.fieldId}
+                    checked={Boolean(formData[field.fieldId] ?? field.defaultValue ?? false)}
+                    onChange={(checked) => handleFieldChange(field.fieldId, checked)}
+                    requiredBadge={field.required}
+                    label={field.label}
+                    description={field.helperText}
                   />
                 )}
 

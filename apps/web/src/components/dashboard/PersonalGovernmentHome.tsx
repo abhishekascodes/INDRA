@@ -307,151 +307,253 @@ export function PersonalGovernmentHome({
         </div>
       )}
 
-      {/* 4. PROACTIVE FINDINGS BANNER (Renders dynamically only when active findings exist) */}
+      {/* 4. PROACTIVE FINDINGS BANNER */}
       <ProactiveFindingsBanner
+        applications={applications}
         onSelectActionPlan={() => onSelectTab('action-plans')}
         onSelectWorkflow={onLaunchWorkflow}
+        onSelectTab={onSelectTab}
       />
 
       {/* 5. THINGS NEEDING ATTENTION */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2.5">
-            <AlertCircleIcon className="w-5 h-5 text-amber-600" />
-            <h2 className="text-sm font-bold tracking-wider uppercase text-[#475569]">
-              Things Needing Attention
-            </h2>
-          </div>
-        </div>
+      {(() => {
+        const isItrCompleted = applications.some(
+          (a) =>
+            (a.workflowCode === 'CHECK_ITR_STATUS' ||
+              a.workflowTitle?.includes('Income Tax') ||
+              a.workflowTitle?.includes('26AS') ||
+              a.title?.includes('Income Tax') ||
+              a.title?.includes('26AS')) &&
+            a.universalStatus === 'COMPLETED'
+        );
 
-        <div className="grid items-start grid-cols-1 md:grid-cols-2 gap-5">
-          {citizen?.primaryName?.includes('Aarav') ? (
-            <>
-              {/* Aarav Card 1: Statutory Income Tax Return Due */}
-              <div className="p-6 rounded-2xl bg-white border border-[#CBD5E1] hover:border-[#94A3B8] transition shadow-xs flex flex-col justify-between space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2.5">
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200 uppercase tracking-wider">
-                      Statutory Obligation
-                    </span>
-                    <span className="text-xs text-[#64748B] font-semibold">Income Tax (CPC)</span>
-                  </div>
-                  <h3 className="font-bold text-lg text-[#0F172A]">Annual Income Tax Return Due (ITR-2)</h3>
-                  <p className="text-sm text-[#475569] mt-2 leading-relaxed">
-                    Under Section 139(1) of the Income-tax Act, 1961, individual taxpayers with manufacturing and capital gains income must file Form ITR-2 for Assessment Year 2026-27.
-                  </p>
-                </div>
+        const isPfCompleted = applications.some(
+          (a) =>
+            (a.workflowCode === 'RECOVER_DORMANT_PF' ||
+              a.workflowTitle?.includes('Provident Fund') ||
+              a.title?.includes('Provident Fund') ||
+              a.title?.includes('EPF')) &&
+            a.universalStatus === 'COMPLETED'
+        );
 
-                <div className="pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-[#64748B] block font-medium">Statutory Deadline:</span>
-                    <span className="text-sm font-bold text-[#0F172A]">31 July 2026</span>
-                  </div>
-                  <button
-                    onClick={() => onLaunchWorkflow('CHECK_ITR_STATUS')}
-                    className="px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs flex items-center space-x-1.5 cursor-pointer"
-                  >
-                    <span>Check 26AS & Status</span>
-                    <ArrowRightIcon className="w-3.5 h-3.5 ml-0.5" />
-                  </button>
-                </div>
+        const isPassportCompleted = applications.some(
+          (a) =>
+            (a.workflowCode === 'RENEW_PASSPORT' ||
+              a.workflowTitle?.includes('Passport') ||
+              a.title?.includes('Passport')) &&
+            a.universalStatus === 'COMPLETED'
+        );
+
+        return (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2.5">
+                <AlertCircleIcon className="w-5 h-5 text-amber-600" />
+                <h2 className="text-sm font-bold tracking-wider uppercase text-[#475569]">
+                  Things Needing Attention
+                </h2>
               </div>
+            </div>
 
-              {/* Aarav Card 2: PM-KISAN Direct Benefit Transfer */}
-              <div className="p-6 rounded-2xl bg-white border border-[#CBD5E1] hover:border-[#94A3B8] transition shadow-xs flex flex-col justify-between space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2.5">
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 uppercase tracking-wider">
-                      Direct Benefit Transfer
-                    </span>
-                    <span className="text-xs text-[#64748B] font-semibold">MoA&FW (PM-KISAN)</span>
-                  </div>
-                  <h3 className="font-bold text-lg text-[#0F172A]">PM-KISAN Direct Subsidy Seeding Pending</h3>
-                  <p className="text-sm text-[#475569] mt-2 leading-relaxed">
-                    Your 1.8-hectare agricultural land parcel in Satara (Survey 142/B) is eligible for PM-KISAN ₹6,000 annual installment benefits. Aadhaar-NPCI bank seeding required.
-                  </p>
-                </div>
+            <div className="grid items-start grid-cols-1 md:grid-cols-2 gap-5">
+              {citizen?.primaryName?.includes('Aarav') ? (
+                <>
+                  {/* Aarav Card 1: Statutory Income Tax Return Due */}
+                  <div className={`p-6 rounded-2xl border transition shadow-xs flex flex-col justify-between space-y-4 ${
+                    isItrCompleted ? 'bg-[#F0FDF4] border-[#BBF7D0]' : 'bg-white border-[#CBD5E1] hover:border-[#94A3B8]'
+                  }`}>
+                    <div>
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${
+                          isItrCompleted
+                            ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                            : 'bg-amber-50 text-amber-800 border border-amber-200'
+                        }`}>
+                          {isItrCompleted ? '✓ Obligation Clear' : 'Statutory Obligation'}
+                        </span>
+                        <span className="text-xs text-[#64748B] font-semibold">Income Tax (CPC)</span>
+                      </div>
+                      <h3 className="font-bold text-lg text-[#0F172A]">
+                        {isItrCompleted ? 'Annual Income Tax Return (ITR-2) Filed & Verified' : 'Annual Income Tax Return Due (ITR-2)'}
+                      </h3>
+                      <p className="text-sm text-[#475569] mt-2 leading-relaxed">
+                        {isItrCompleted
+                          ? 'Income Tax Return (ITR-2) for Assessment Year 2026-27 is filed and verified against TRACES Form 26AS. Intimation u/s 143(1) confirmed with zero outstanding tax liability.'
+                          : 'Under Section 139(1) of the Income-tax Act, 1961, individual taxpayers with manufacturing and capital gains income must file Form ITR-2 for Assessment Year 2026-27.'}
+                      </p>
+                    </div>
 
-                <div className="pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-[#64748B] block font-medium">Annual Entitlement:</span>
-                    <span className="text-sm font-bold text-emerald-700">₹6,000 / Year</span>
+                    <div className="pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-[#64748B] block font-medium">
+                          {isItrCompleted ? 'Filing Status:' : 'Statutory Deadline:'}
+                        </span>
+                        <span className={`text-sm font-bold ${isItrCompleted ? 'text-emerald-800' : 'text-[#0F172A]'}`}>
+                          {isItrCompleted ? 'Verified u/s 143(1)' : '31 July 2026'}
+                        </span>
+                      </div>
+                      {isItrCompleted ? (
+                        <button
+                          onClick={() => onSelectTab('world-model')}
+                          className="px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-700 hover:bg-emerald-800 text-white transition shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                        >
+                          <CheckIcon className="w-4 h-4 mr-1 text-white" />
+                          <span>View Filing Record</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onLaunchWorkflow('CHECK_ITR_STATUS')}
+                          className="px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                        >
+                          <span>Check 26AS & Status</span>
+                          <ArrowRightIcon className="w-3.5 h-3.5 ml-0.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <button
-                    onClick={() => onSelectTab('world-model')}
-                    className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#CBD5E1] text-[#0F172A] transition cursor-pointer"
-                  >
-                    Verify Land Parcel
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Priya Card 1: Unlinked EPF */}
-              <div className="p-6 rounded-2xl bg-white border border-[#CBD5E1] hover:border-[#94A3B8] transition shadow-xs flex flex-col justify-between space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2.5">
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200 uppercase tracking-wider">
-                      Action Recommended
-                    </span>
-                    <span className="text-xs text-[#64748B] font-semibold">EPFO</span>
-                  </div>
-                  <h3 className="font-bold text-lg text-[#0F172A]">Unlinked Provident Fund Account Detected</h3>
-                  <p className="text-sm text-[#475569] mt-2 leading-relaxed">
-                    An inactive EPF account from <strong className="text-[#0F172A]">Apex Systems Global Services</strong> with a balance of{' '}
-                    <strong className="text-[#0F172A]">₹1,42,500</strong> was identified under your UAN. Dormant accounts stop compounding interest after 36 months.
-                  </p>
-                </div>
 
-                <div className="pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-[#64748B] block font-medium">Recoverable:</span>
-                    <span className="text-sm font-bold text-[#0F172A]">₹1,42,500</span>
-                  </div>
-                  <button
-                    onClick={() => onLaunchWorkflow('RECOVER_DORMANT_PF')}
-                    className="px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs flex items-center space-x-1.5 cursor-pointer"
-                  >
-                    <span>Review & Consolidate</span>
-                    <ArrowRightIcon className="w-3.5 h-3.5 ml-0.5" />
-                  </button>
-                </div>
-              </div>
+                  {/* Aarav Card 2: PM-KISAN Direct Benefit Transfer */}
+                  <div className="p-6 rounded-2xl bg-white border border-[#CBD5E1] hover:border-[#94A3B8] transition shadow-xs flex flex-col justify-between space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 uppercase tracking-wider">
+                          Direct Benefit Transfer
+                        </span>
+                        <span className="text-xs text-[#64748B] font-semibold">MoA&FW (PM-KISAN)</span>
+                      </div>
+                      <h3 className="font-bold text-lg text-[#0F172A]">PM-KISAN Direct Subsidy Seeding Pending</h3>
+                      <p className="text-sm text-[#475569] mt-2 leading-relaxed">
+                        Your 1.8-hectare agricultural land parcel in Satara (Survey 142/B) is eligible for PM-KISAN ₹6,000 annual installment benefits. Aadhaar-NPCI bank seeding required.
+                      </p>
+                    </div>
 
-              {/* Priya Card 2: Passport Reissue */}
-              <div className="p-6 rounded-2xl bg-white border border-[#CBD5E1] hover:border-[#94A3B8] transition shadow-xs flex flex-col justify-between space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2.5">
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-200 uppercase tracking-wider">
-                      Statutory Notice
-                    </span>
-                    <span className="text-xs text-[#64748B] font-semibold">Passport Seva</span>
+                    <div className="pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-[#64748B] block font-medium">Annual Entitlement:</span>
+                        <span className="text-sm font-bold text-emerald-700">₹6,000 / Year</span>
+                      </div>
+                      <button
+                        onClick={() => onSelectTab('world-model')}
+                        className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#CBD5E1] text-[#0F172A] transition cursor-pointer"
+                      >
+                        Verify Land Parcel
+                      </button>
+                    </div>
                   </div>
-                  <h3 className="font-bold text-lg text-[#0F172A]">Passport Reissue Due in September 2026</h3>
-                  <p className="text-sm text-[#475569] mt-2 leading-relaxed">
-                    Your passport (<code className="text-xs font-mono font-bold text-[#0F172A]">Z198****</code>) reaches 10-year validity on 14 Sep 2026. Most international destinations require at least 6 months remaining validity before entry.
-                  </p>
-                </div>
+                </>
+              ) : (
+                <>
+                  {/* Priya Card 1: Unlinked EPF */}
+                  <div className={`p-6 rounded-2xl border transition shadow-xs flex flex-col justify-between space-y-4 ${
+                    isPfCompleted ? 'bg-[#F0FDF4] border-[#BBF7D0]' : 'bg-white border-[#CBD5E1] hover:border-[#94A3B8]'
+                  }`}>
+                    <div>
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${
+                          isPfCompleted
+                            ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                            : 'bg-amber-50 text-amber-800 border border-amber-200'
+                        }`}>
+                          {isPfCompleted ? '✓ Consolidated' : 'Action Recommended'}
+                        </span>
+                        <span className="text-xs text-[#64748B] font-semibold">EPFO</span>
+                      </div>
+                      <h3 className="font-bold text-lg text-[#0F172A]">
+                        {isPfCompleted ? 'Provident Fund Balance Consolidated' : 'Unlinked Provident Fund Account Detected'}
+                      </h3>
+                      <p className="text-sm text-[#475569] mt-2 leading-relaxed">
+                        {isPfCompleted
+                          ? '₹1,42,500 from Apex Systems Global Services has been successfully transferred into your active InnoTech Solutions PF ledger under UAN 1014****1844.'
+                          : 'An inactive EPF account from Apex Systems Global Services with a balance of ₹1,42,500 was identified under your UAN. Dormant accounts stop compounding interest after 36 months.'}
+                      </p>
+                    </div>
 
-                <div className="pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-[#64748B] block font-medium">Validity:</span>
-                    <span className="text-sm font-bold text-[#0F172A]">11 months remaining</span>
+                    <div className="pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-[#64748B] block font-medium">
+                          {isPfCompleted ? 'Transferred to Active UAN:' : 'Recoverable:'}
+                        </span>
+                        <span className="text-sm font-bold text-emerald-700">₹1,42,500</span>
+                      </div>
+                      {isPfCompleted ? (
+                        <button
+                          onClick={() => onSelectTab('world-model')}
+                          className="px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-700 hover:bg-emerald-800 text-white transition shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                        >
+                          <CheckIcon className="w-4 h-4 mr-1 text-white" />
+                          <span>View Passbook</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onLaunchWorkflow('RECOVER_DORMANT_PF')}
+                          className="px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                        >
+                          <span>Review & Consolidate</span>
+                          <ArrowRightIcon className="w-3.5 h-3.5 ml-0.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <button
-                    onClick={() => onLaunchWorkflow('RENEW_PASSPORT')}
-                    className="px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs cursor-pointer flex items-center space-x-1.5"
-                  >
-                    <span>Prepare Reissue</span>
-                    <ArrowRightIcon className="w-3.5 h-3.5 ml-0.5" />
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
+
+                  {/* Priya Card 2: Passport Reissue */}
+                  <div className={`p-6 rounded-2xl border transition shadow-xs flex flex-col justify-between space-y-4 ${
+                    isPassportCompleted ? 'bg-[#F0FDF4] border-[#BBF7D0]' : 'bg-white border-[#CBD5E1] hover:border-[#94A3B8]'
+                  }`}>
+                    <div>
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${
+                          isPassportCompleted
+                            ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                            : 'bg-blue-50 text-blue-800 border border-blue-200'
+                        }`}>
+                          {isPassportCompleted ? '✓ Application Submitted' : 'Statutory Notice'}
+                        </span>
+                        <span className="text-xs text-[#64748B] font-semibold">Passport Seva</span>
+                      </div>
+                      <h3 className="font-bold text-lg text-[#0F172A]">
+                        {isPassportCompleted ? 'Passport Reissue Application Registered' : 'Passport Reissue Due in September 2026'}
+                      </h3>
+                      <p className="text-sm text-[#475569] mt-2 leading-relaxed">
+                        {isPassportCompleted
+                          ? 'Reissue application has been verified and registered with Regional Passport Office Koramangala. Application Reference Number (ARN) issued.'
+                          : 'Your passport (Z198****) reaches 10-year validity on 14 Sep 2026. Most international destinations require at least 6 months remaining validity before entry.'}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-[#64748B] block font-medium">
+                          {isPassportCompleted ? 'Application Reference:' : 'Validity:'}
+                        </span>
+                        <span className={`text-sm font-bold ${isPassportCompleted ? 'text-emerald-800 font-mono' : 'text-[#0F172A]'}`}>
+                          {isPassportCompleted ? 'ARN-PS-2026-8910' : '11 months remaining'}
+                        </span>
+                      </div>
+                      {isPassportCompleted ? (
+                        <button
+                          onClick={() => onSelectTab('world-model')}
+                          className="px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-700 hover:bg-emerald-800 text-white transition shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                        >
+                          <CheckIcon className="w-4 h-4 mr-1 text-white" />
+                          <span>View Passport Record</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onLaunchWorkflow('RENEW_PASSPORT')}
+                          className="px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs cursor-pointer flex items-center space-x-1.5"
+                        >
+                          <span>Prepare Reissue</span>
+                          <ArrowRightIcon className="w-3.5 h-3.5 ml-0.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* 6. IN-PROGRESS APPLICATIONS & VERIFIED IDENTITY ROW */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

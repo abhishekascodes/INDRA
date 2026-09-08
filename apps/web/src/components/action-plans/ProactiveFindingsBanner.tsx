@@ -4,6 +4,7 @@ import {
   dismissProactiveFinding,
   snoozeProactiveFinding,
   scanProactiveFindings,
+  resolveProactiveFinding,
 } from '../../api.js';
 import type { ProactiveFinding } from '@indra/contracts';
 import {
@@ -15,24 +16,32 @@ import {
   ClockIcon,
   RefreshIcon,
   InfoIcon,
+  CheckIcon,
+  CheckCircle2Icon,
+  BuildingIcon,
+  TaxDocIcon,
+  SavingsBankIcon,
+  LandParcelIcon,
 } from '../icons.js';
 import { formatHumanLabel, formatPlanTitle } from '../../utils/civicFormatters.js';
 
-
 interface ProactiveFindingsBannerProps {
+  applications?: any[];
   onSelectActionPlan?: (planCode: string) => void;
   onSelectWorkflow?: (workflowCode: string) => void;
+  onSelectTab?: (tab: 'home' | 'world-model' | 'action-plans' | 'transitions' | 'inbox' | 'vault' | 'trust') => void;
 }
 
 export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = ({
+  applications = [],
   onSelectActionPlan,
   onSelectWorkflow,
+  onSelectTab,
 }) => {
   const [findings, setFindings] = useState<ProactiveFinding[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
-  const [activeRationaleFinding, setActiveRationaleFinding] = useState<ProactiveFinding | null>(null);
 
   const loadFindings = async () => {
     try {
@@ -54,9 +63,6 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
     try {
       await dismissProactiveFinding(id);
       setFindings((prev) => prev.filter((f) => f.id !== id));
-      if (activeRationaleFinding?.id === id) {
-        setActiveRationaleFinding(null);
-      }
     } catch (err) {
       console.error('Failed to dismiss finding:', err);
     }
@@ -66,9 +72,6 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
     try {
       await snoozeProactiveFinding(id, days);
       setFindings((prev) => prev.filter((f) => f.id !== id));
-      if (activeRationaleFinding?.id === id) {
-        setActiveRationaleFinding(null);
-      }
     } catch (err) {
       console.error('Failed to snooze finding:', err);
     }
@@ -86,37 +89,106 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
     }
   };
 
+  // Check if a finding's workflow or action plan has already been executed/completed
+  const isFindingCompleted = (finding: ProactiveFinding): boolean => {
+    const wf =
+      finding.recommendedWorkflowCode ||
+      (finding.actionLink?.actionType === 'LAUNCH_WORKFLOW' ? finding.actionLink.targetCode : null);
+
+    if (wf) {
+      const hasCompletedApp = applications.some(
+        (a) =>
+          (a.workflowCode === wf ||
+            a.workflowTitle?.toUpperCase().includes(wf.replace(/_/g, ' ')) ||
+            (wf === 'CHECK_ITR_STATUS' && a.title?.toUpperCase().includes('TAX')) ||
+            (wf === 'RECOVER_DORMANT_PF' && a.title?.toUpperCase().includes('PROVIDENT FUND'))) &&
+          a.universalStatus === 'COMPLETED'
+      );
+      if (hasCompletedApp) return true;
+    }
+
+    if (finding.status === 'RESOLVED') return true;
+    return false;
+  };
+
+  const getNoticeAuthorityIcon = (authority: string = '', category: string = '') => {
+    const combined = (authority + ' ' + category).toUpperCase();
+    if (combined.includes('TAX') || combined.includes('CPC') || combined.includes('ITR') || combined.includes('CBDT')) {
+      return (
+        <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 flex items-center justify-center shrink-0">
+          <TaxDocIcon className="w-4 h-4" />
+        </div>
+      );
+    }
+    if (combined.includes('AGRICULTURE') || combined.includes('PMFBY') || combined.includes('KISAN') || combined.includes('FARM')) {
+      return (
+        <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center shrink-0">
+          <LandParcelIcon className="w-4 h-4" />
+        </div>
+      );
+    }
+    if (combined.includes('EPFO') || combined.includes('PROVIDENT') || combined.includes('PENSION') || combined.includes('ASSET')) {
+      return (
+        <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 flex items-center justify-center shrink-0">
+          <SavingsBankIcon className="w-4 h-4" />
+        </div>
+      );
+    }
+    return (
+      <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+        <BuildingIcon className="w-4 h-4" />
+      </div>
+    );
+  };
+
   const filteredFindings =
     activeCategory === 'ALL'
       ? findings
       : findings.filter((f) => f.category === activeCategory);
 
-  // If there are no active findings, do not render any clutter
+  const pendingFindings = filteredFindings.filter((f) => !isFindingCompleted(f));
+  const completedFindings = filteredFindings.filter((f) => isFindingCompleted(f));
+
   if (findings.length === 0) return null;
 
   return (
-    <section className="mb-8 space-y-4">
-      {/* 1. Section Header & Scan Trigger */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <section className="mb-8 space-y-4 animate-fadeIn">
+      {/* 1. Official Header & Validation Metadata */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-200/80">
         <div className="flex items-center space-x-3">
           <div className="relative flex items-center justify-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping absolute opacity-75"></span>
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
+            {pendingFindings.length > 0 ? (
+              <>
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping absolute opacity-75" />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-600" />
+              </>
+            ) : (
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
+            )}
           </div>
-          <div className="flex items-center space-x-2.5">
-            <h2 className="text-sm font-bold tracking-wider uppercase text-slate-700">
-              Active Civic Notices & Alerts
-            </h2>
-            <span className="px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 font-extrabold text-xs">
-              {findings.length} Need Attention
-            </span>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h2 className="text-xs font-black tracking-wider uppercase text-slate-800">
+                Civic Action Register & Statutory Notices
+              </h2>
+              {pendingFindings.length > 0 ? (
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-300 text-amber-900 font-extrabold text-xs">
+                  {pendingFindings.length} Need Action
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-800 font-extrabold text-xs flex items-center gap-1">
+                  <CheckIcon className="w-3 h-3 text-emerald-600" />
+                  All Clear
+                </span>
+              )}
+            </div>
+            <p className="text-2xs text-slate-500 mt-0.5 hidden sm:block">
+              Authoritative notices synthesized from verified national and state public databases
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <span className="text-xs text-slate-400 font-medium hidden md:inline">
-            Continuously validated across official registries
-          </span>
+        <div className="flex items-center space-x-3 self-end sm:self-auto">
           <button
             onClick={handleScan}
             disabled={loading}
@@ -124,58 +196,28 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
             title="Scan official records for new updates"
           >
             <RefreshIcon className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
-            <span>{loading ? 'Checking Records...' : 'Check for Updates'}</span>
+            <span>{loading ? 'Validating...' : 'Check for Updates'}</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Category Filter Chips */}
-      {findings.length > 1 && (
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 text-xs">
-          {['ALL', 'ANOMALY_CONTRADICTION', 'CREDENTIAL_LIFECYCLE', 'OBLIGATION_DEADLINE', 'DORMANT_ASSET', 'ELIGIBILITY_OPPORTUNITY'].map(
-            (cat) => {
-              const label = cat === 'ALL' ? 'All Notices' : formatHumanLabel(cat);
-              const count =
-                cat === 'ALL'
-                  ? findings.length
-                  : findings.filter((f) => f.category === cat).length;
-              if (cat !== 'ALL' && count === 0) return null;
-
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all font-semibold text-xs cursor-pointer ${
-                    activeCategory === cat
-                      ? 'bg-[#0F172A] text-white shadow-xs'
-                      : 'bg-white text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 border border-slate-200'
-                  }`}
-                >
-                  {label}{' '}
-                  <span className={`ml-1 text-[11px] ${activeCategory === cat ? 'text-slate-300' : 'text-slate-400'}`}>
-                    ({count})
-                  </span>
-                </button>
-              );
-            }
-          )}
-        </div>
-      )}
-
-      {/* 3. Cards Grid - Clean, spacious 2-column or 3-column executive layout */}
-      <div
-        className={`grid items-stretch gap-5 ${
-          filteredFindings.length === 1
-            ? 'grid-cols-1'
-            : filteredFindings.length === 3
-            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-            : 'grid-cols-1 md:grid-cols-2'
-        }`}
-      >
+      {/* 2. Structured Executive Civic Register (Human-Crafted Ministerial Density) */}
+      <div className="bg-white border border-slate-300 rounded-2xl shadow-xs overflow-hidden divide-y divide-slate-150">
         {filteredFindings.map((finding) => {
+          const isCompleted = isFindingCompleted(finding);
           const isCritical = finding.urgency === 'CRITICAL';
           const isHigh = finding.urgency === 'HIGH';
           const isExpanded = expandedId === finding.id;
+
+          const authority =
+            (finding.provenanceData?.sourceAuthority as string) ||
+            (finding.policyProvenance?.sourceAuthority as string) ||
+            'Government of India';
+
+          const statutoryAct =
+            (finding.policyProvenance?.statutoryDomain as string) ||
+            (finding.policyProvenance?.policyDerivation as string) ||
+            'Governed by Central Statutory Law';
 
           const workflowTarget =
             finding.recommendedWorkflowCode ||
@@ -185,331 +227,219 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
             finding.recommendedActionPlanCode ||
             (finding.actionLink?.actionType === 'LAUNCH_ACTION_PLAN' ? finding.actionLink.targetCode : null);
 
+          const deadline =
+            (finding.provenanceData?.deadline as string) ||
+            (finding.actionPayload?.deadline as string);
+
+          const financialValue =
+            (finding.actionPayload?.totalDormantBalance as number) ||
+            (finding.actionPayload?.annualBenefitInr as number);
+
           return (
             <div
               key={finding.id}
-              className={`group rounded-2xl bg-white border transition-all duration-200 shadow-2xs hover:shadow-md flex flex-col justify-between overflow-hidden relative ${
-                isCritical
-                  ? 'border-slate-200 hover:border-rose-300'
-                  : isHigh
-                  ? 'border-slate-200 hover:border-amber-300'
-                  : 'border-slate-200 hover:border-slate-300'
+              className={`p-5 sm:p-6 transition-colors ${
+                isCompleted
+                  ? 'bg-emerald-50/20'
+                  : isCritical
+                  ? 'bg-rose-50/20 hover:bg-rose-50/30'
+                  : 'hover:bg-slate-50/60'
               }`}
             >
-              {/* Urgency Accent Bar */}
-              <div
-                className={`h-1 w-full ${
-                  isCritical
-                    ? 'bg-rose-500'
-                    : isHigh
-                    ? 'bg-amber-500'
-                    : 'bg-blue-500'
-                }`}
-              />
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
+                {/* Left Column: Department Seal + Content */}
+                <div className="flex items-start space-x-4 flex-1 min-w-0">
+                  {getNoticeAuthorityIcon(authority, finding.category)}
 
-              <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
-                <div>
-                  {/* Card Header: Urgency Badge + Category + Quick Actions */}
-                  <div className="flex items-center justify-between gap-2 mb-3.5">
-                    <div className="flex items-center flex-wrap gap-2">
-                      {isCritical ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200/80">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    {/* Department, Legal Domain, Urgency Badges */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-2xs font-bold text-slate-700 uppercase tracking-wider">
+                        {authority}
+                      </span>
+                      <span className="text-slate-300">·</span>
+                      <span className="text-2xs text-slate-500 font-medium truncate max-w-xs">
+                        {statutoryAct.replace(/_/g, ' ')}
+                      </span>
+
+                      {/* Status Badges */}
+                      {isCompleted ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          <CheckIcon className="w-3 h-3 text-emerald-700" />
+                          Obligation Clear / Verified
+                        </span>
+                      ) : isCritical ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-extrabold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300">
                           Urgent Notice
                         </span>
                       ) : isHigh ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200/80">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
                           Action Required
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/80">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                          Notice
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-extrabold uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-300">
+                          Official Notice
                         </span>
                       )}
 
-                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200/60">
-                        {formatHumanLabel(finding.category)}
-                      </span>
-                    </div>
+                      {deadline && !isCompleted && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                          <ClockIcon className="w-3 h-3 text-rose-600" />
+                          Due: {deadline}
+                        </span>
+                      )}
 
-                    {/* Subtle Quick Actions (Snooze + Dismiss) */}
-                    <div className="flex items-center space-x-1 opacity-75 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => handleSnooze(finding.id, 7)}
-                        className="text-[11px] font-medium text-slate-400 hover:text-slate-700 hover:bg-slate-100 px-2 py-1 rounded-lg transition-colors cursor-pointer"
-                        title="Snooze reminder for 7 days"
-                      >
-                        Snooze 7d
-                      </button>
-                      <button
-                        onClick={() => handleDismiss(finding.id)}
-                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded-lg transition-colors cursor-pointer"
-                        title="Dismiss notice"
-                      >
-                        <CloseIcon className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Finding Title */}
-                  <h3 className="font-bold text-base sm:text-lg text-slate-900 tracking-tight leading-snug mb-2">
-                    {formatPlanTitle(finding.title)}
-                  </h3>
-
-                  {/* Finding Body Explanation */}
-                  <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                    {finding.explanation}
-                  </p>
-
-                  {/* Statutory Deadline if provided */}
-                  {((finding.provenanceData?.deadline as string) || (finding.actionPayload?.deadline as string)) && (
-                    <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 font-semibold">
-                      <ClockIcon className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                      <span>
-                        Statutory Deadline:{' '}
-                        <strong className="font-bold text-amber-950">
-                          {(finding.provenanceData?.deadline as string) || (finding.actionPayload?.deadline as string)}
-                        </strong>
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Statutory Assessment Accordion Trigger */}
-                  {finding.structuredExplanation && (
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between text-xs pt-1">
-                        <button
-                          onClick={() => setExpandedId(isExpanded ? null : finding.id)}
-                          className="inline-flex items-center gap-1.5 font-semibold text-slate-700 hover:text-slate-900 transition-colors cursor-pointer group/exp"
-                        >
-                          <InfoIcon className="w-3.5 h-3.5 text-slate-500 group-hover/exp:text-slate-800" />
-                          <span>{isExpanded ? 'Hide Statutory Assessment' : 'Why did INDRA flag this?'}</span>
-                          <ChevronDownIcon
-                            className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
-                              isExpanded ? 'rotate-180' : ''
-                            }`}
-                          />
-                        </button>
-
-                        <button
-                          onClick={() => setActiveRationaleFinding(finding)}
-                          className="font-medium text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer flex items-center gap-1"
-                        >
-                          <span>Legal Basis</span>
-                          <span className="text-[10px]">↗</span>
-                        </button>
-                      </div>
-
-                      {isExpanded && (
-                        <div className="mt-3 p-4 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-3 animate-fadeIn">
-                          <div className="border-l-2 border-slate-300 pl-3">
-                            <span className="font-bold uppercase tracking-wider text-[10px] text-slate-500 block">
-                              1. What Was Detected
-                            </span>
-                            <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
-                              {finding.structuredExplanation.whatChanged}
-                            </p>
-                          </div>
-                          <div className="border-l-2 border-amber-400 pl-3">
-                            <span className="font-bold uppercase tracking-wider text-[10px] text-amber-800 block">
-                              2. Statutory Impact & Law
-                            </span>
-                            <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
-                              {finding.structuredExplanation.whyItMatters}
-                            </p>
-                          </div>
-                          <div className="border-l-2 border-indigo-400 pl-3">
-                            <span className="font-bold uppercase tracking-wider text-[10px] text-indigo-800 block">
-                              3. INDRA Recommendation
-                            </span>
-                            <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
-                              {finding.structuredExplanation.whatIndraRecommends}
-                            </p>
-                          </div>
-                          <div className="border-l-2 border-emerald-400 pl-3">
-                            <span className="font-bold uppercase tracking-wider text-[10px] text-emerald-800 block">
-                              4. What You Authorize
-                            </span>
-                            <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
-                              {finding.structuredExplanation.whatCitizenMustAuthorize}
-                            </p>
-                          </div>
-                          <div className="border-l-2 border-cyan-400 pl-3">
-                            <span className="font-bold uppercase tracking-wider text-[10px] text-cyan-800 block">
-                              5. Post-Resolution Outcome
-                            </span>
-                            <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
-                              {finding.structuredExplanation.whatHappensNext}
-                            </p>
-                          </div>
-                        </div>
+                      {financialValue && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          ₹{financialValue.toLocaleString('en-IN')} Entitlement / Recovery
+                        </span>
                       )}
                     </div>
-                  )}
+
+                    {/* Notice Title */}
+                    <h3 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug">
+                      {formatPlanTitle(finding.title)}
+                    </h3>
+
+                    {/* Ground Truth Summary */}
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-4xl">
+                      {finding.explanation}
+                    </p>
+
+                    {/* Actionable Statutory Guidance */}
+                    <div className="pt-1 flex items-center gap-2 text-2xs text-slate-500 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                      <span>{finding.actionableRecommendation || 'Follow guided steps to resolve.'}</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Bottom Footer: Next Step Prompt + Action Button */}
-                <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2">
-                  <div className="text-xs text-slate-500 flex items-center gap-2 min-w-0 pr-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
-                    <span className="truncate">
-                      {finding.actionableRecommendation || 'Follow guided steps to resolve'}
-                    </span>
+                {/* Right Column: Dynamic Action State & Controls */}
+                <div className="shrink-0 flex flex-col sm:flex-row lg:flex-col items-end justify-between gap-3 pl-12 lg:pl-0">
+                  {/* Action Execution Button */}
+                  <div className="w-full sm:w-auto">
+                    {isCompleted ? (
+                      <div className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-100/80 text-emerald-800 border border-emerald-300 shadow-2xs">
+                        <CheckCircle2Icon className="w-4 h-4 text-emerald-700" />
+                        <span>Resolved & Up to Date</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {actionPlanTarget && onSelectActionPlan && (
+                          <button
+                            onClick={() => onSelectActionPlan(actionPlanTarget)}
+                            className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold bg-[#0F172A] hover:bg-black active:scale-98 text-white transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <span>Resolve in Action Plan</span>
+                            <ArrowRightIcon className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        {workflowTarget && onSelectWorkflow && !actionPlanTarget && (
+                          <button
+                            onClick={() => onSelectWorkflow(workflowTarget)}
+                            className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <span>Start Guided Resolution</span>
+                            <ArrowRightIcon className="w-3.5 h-3.5 ml-0.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="shrink-0 flex items-center justify-end">
-                    {actionPlanTarget && onSelectActionPlan && (
+                  {/* Secondary Actions: Expand Law + Snooze / Dismiss */}
+                  <div className="flex items-center space-x-2 text-2xs">
+                    {finding.structuredExplanation && (
                       <button
-                        onClick={() => onSelectActionPlan(actionPlanTarget)}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold bg-[#0F172A] hover:bg-slate-800 active:bg-black text-white transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        onClick={() => setExpandedId(isExpanded ? null : finding.id)}
+                        className="font-semibold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 cursor-pointer"
                       >
-                        <span>Resolve in Action Plan</span>
-                        <ArrowRightIcon className="w-3.5 h-3.5" />
+                        <InfoIcon className="w-3.5 h-3.5 text-slate-500" />
+                        <span>{isExpanded ? 'Hide Legal Basis' : 'Statutory Basis'}</span>
+                        <ChevronDownIcon
+                          className={`w-3 h-3 text-slate-400 transition-transform ${
+                            isExpanded ? 'rotate-180' : ''
+                          }`}
+                        />
                       </button>
                     )}
 
-                    {workflowTarget && onSelectWorkflow && !actionPlanTarget && (
-                      <button
-                        onClick={() => onSelectWorkflow(workflowTarget)}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold bg-[#0F172A] hover:bg-slate-800 active:bg-black text-white transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <span>Start Guided Resolution</span>
-                        <ArrowRightIcon className="w-3.5 h-3.5" />
-                      </button>
+                    {!isCompleted && (
+                      <>
+                        <span className="text-slate-300">·</span>
+                        <button
+                          onClick={() => handleSnooze(finding.id, 7)}
+                          className="text-slate-400 hover:text-slate-700 px-1.5 py-1 rounded hover:bg-slate-100 transition cursor-pointer"
+                          title="Snooze reminder for 7 days"
+                        >
+                          Snooze 7d
+                        </button>
+                        <span className="text-slate-300">·</span>
+                        <button
+                          onClick={() => handleDismiss(finding.id)}
+                          className="text-slate-400 hover:text-rose-600 px-1.5 py-1 rounded hover:bg-rose-50 transition cursor-pointer"
+                          title="Dismiss notice"
+                        >
+                          Dismiss
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
 
-      {/* 4. STATUTORY RATIONALE & POLICY PROVENANCE MODAL */}
-      {activeRationaleFinding && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-fadeIn max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
-                    {formatHumanLabel(activeRationaleFinding.category)}
-                  </span>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-md tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
-                    {formatHumanLabel(activeRationaleFinding.ruleCode)}
-                  </span>
-                </div>
-                <h3 className="text-xl font-extrabold text-slate-900">
-                  {activeRationaleFinding.title}
-                </h3>
-              </div>
-              <button
-                onClick={() => setActiveRationaleFinding(null)}
-                className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 cursor-pointer transition-colors"
-                title="Close"
-              >
-                <CloseIcon className="w-5 h-5" />
-              </button>
-            </div>
+              {/* 3. Expandable Statutory Legal Basis Drawer */}
+              {isExpanded && finding.structuredExplanation && (
+                <div className="mt-4 pt-4 border-t border-slate-200/80 bg-slate-50/80 rounded-xl p-4 text-xs space-y-3 animate-fadeIn">
+                  <div className="font-bold text-slate-800 uppercase tracking-wider text-2xs flex items-center gap-1.5 pb-1 border-b border-slate-200">
+                    <ShieldCheckIcon className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Statutory Derivation & Legal Framework</span>
+                  </div>
 
-            {/* Statutory Ground Truth & Explanation */}
-            <div className="space-y-4 text-sm text-slate-600">
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="font-bold text-slate-500 uppercase text-xs block mb-1">
-                  Continuous Ground Truth Observation:
-                </span>
-                <p className="text-slate-900 leading-relaxed">{activeRationaleFinding.explanation}</p>
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="border-l-2 border-slate-400 pl-3">
+                      <span className="font-bold uppercase tracking-wider text-2xs text-slate-500 block">
+                        1. What Was Detected in Public Record
+                      </span>
+                      <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
+                        {finding.structuredExplanation.whatChanged}
+                      </p>
+                    </div>
 
-              {activeRationaleFinding.structuredExplanation && (
-                <div className="space-y-3">
-                  <div className="p-4 rounded-xl bg-white border border-slate-200">
-                    <span className="font-bold text-slate-500 uppercase text-xs block">1. What Changed</span>
-                    <p className="text-slate-900 mt-1 leading-relaxed">
-                      {activeRationaleFinding.structuredExplanation.whatChanged}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200">
-                    <span className="font-bold text-amber-800 uppercase text-xs block">
-                      2. Why It Matters (Statutory Impact)
-                    </span>
-                    <p className="text-slate-900 mt-1 leading-relaxed">
-                      {activeRationaleFinding.structuredExplanation.whyItMatters}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-200">
-                    <span className="font-bold text-indigo-800 uppercase text-xs block">
-                      3. What INDRA Recommends
-                    </span>
-                    <p className="text-slate-900 mt-1 leading-relaxed">
-                      {activeRationaleFinding.structuredExplanation.whatIndraRecommends}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200">
-                    <span className="font-bold text-emerald-800 uppercase text-xs block">
-                      4. What You Must Authorize
-                    </span>
-                    <p className="text-slate-900 mt-1 leading-relaxed">
-                      {activeRationaleFinding.structuredExplanation.whatCitizenMustAuthorize}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-cyan-50/50 border border-cyan-200">
-                    <span className="font-bold text-cyan-800 uppercase text-xs block">
-                      5. What Happens Next
-                    </span>
-                    <p className="text-slate-900 mt-1 leading-relaxed">
-                      {activeRationaleFinding.structuredExplanation.whatHappensNext}
-                    </p>
+                    <div className="border-l-2 border-amber-500 pl-3">
+                      <span className="font-bold uppercase tracking-wider text-2xs text-amber-800 block">
+                        2. Statutory Impact & Governing Law
+                      </span>
+                      <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
+                        {finding.structuredExplanation.whyItMatters}
+                      </p>
+                    </div>
+
+                    <div className="border-l-2 border-indigo-500 pl-3">
+                      <span className="font-bold uppercase tracking-wider text-2xs text-indigo-800 block">
+                        3. INDRA Statutory Recommendation
+                      </span>
+                      <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
+                        {finding.structuredExplanation.whatIndraRecommends}
+                      </p>
+                    </div>
+
+                    <div className="border-l-2 border-emerald-500 pl-3">
+                      <span className="font-bold uppercase tracking-wider text-2xs text-emerald-800 block">
+                        4. Citizen Authorization & Outcome
+                      </span>
+                      <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
+                        {finding.structuredExplanation.whatCitizenMustAuthorize}
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
-
-            {/* Modal Actions */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <button
-                onClick={() => setActiveRationaleFinding(null)}
-                className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
-              >
-                Close
-              </button>
-
-              <div className="flex items-center gap-2.5">
-                {activeRationaleFinding.recommendedActionPlanCode && onSelectActionPlan && (
-                  <button
-                    onClick={() => {
-                      const code = activeRationaleFinding.recommendedActionPlanCode!;
-                      setActiveRationaleFinding(null);
-                      onSelectActionPlan(code);
-                    }}
-                    className="px-5 py-2.5 rounded-xl text-sm font-bold bg-[#0F172A] hover:bg-slate-800 text-white transition shadow-xs flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span>Resolve in Action Plan</span>
-                    <ArrowRightIcon className="w-4 h-4" />
-                  </button>
-                )}
-
-                {activeRationaleFinding.recommendedWorkflowCode && onSelectWorkflow && !activeRationaleFinding.recommendedActionPlanCode && (
-                  <button
-                    onClick={() => {
-                      const code = activeRationaleFinding.recommendedWorkflowCode!;
-                      setActiveRationaleFinding(null);
-                      onSelectWorkflow(code);
-                    }}
-                    className="px-5 py-2.5 rounded-xl text-sm font-bold bg-[#0F172A] hover:bg-slate-800 text-white transition shadow-xs flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span>Start Guided Resolution</span>
-                    <ArrowRightIcon className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+          );
+        })}
+      </div>
     </section>
   );
 };

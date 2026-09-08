@@ -10,10 +10,11 @@ import {
 
 interface GovernmentInboxProps {
   inboxItems: any[];
+  applications?: any[];
   onLaunchWorkflow: (workflowCode: string) => void;
 }
 
-export function GovernmentInbox({ inboxItems, onLaunchWorkflow }: GovernmentInboxProps) {
+export function GovernmentInbox({ inboxItems, applications = [], onLaunchWorkflow }: GovernmentInboxProps) {
   const [activeTab, setActiveTab] = useState<'action-center' | 'consents' | 'notices'>('action-center');
   const [actionCenterData, setActionCenterData] = useState<{ items: any[]; summary: any } | null>(null);
   const [consentArtifacts, setConsentArtifacts] = useState<any[]>([]);
@@ -169,13 +170,38 @@ export function GovernmentInbox({ inboxItems, onLaunchWorkflow }: GovernmentInbo
                 </div>
 
                 {item.actionPayload?.recommendedWorkflow && (
-                  <button
-                    onClick={() => onLaunchWorkflow(item.actionPayload.recommendedWorkflow)}
-                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-xs flex items-center space-x-1.5 self-start sm:self-auto cursor-pointer shrink-0"
-                  >
-                    <span>Execute Action</span>
-                    <ArrowRightIcon className="w-4 h-4 ml-1" />
-                  </button>
+                  (() => {
+                    const wf = item.actionPayload.recommendedWorkflow;
+                    const isCompleted =
+                      item.canonicalStatus === 'COMPLETED' ||
+                      applications.some(
+                        (a) =>
+                          (a.workflowCode === wf ||
+                            a.workflowTitle?.toUpperCase().includes(wf.replace(/_/g, ' ')) ||
+                            (wf === 'CHECK_ITR_STATUS' && a.title?.toUpperCase().includes('TAX')) ||
+                            (wf === 'RECOVER_DORMANT_PF' && a.title?.toUpperCase().includes('PROVIDENT FUND'))) &&
+                          a.universalStatus === 'COMPLETED'
+                      );
+
+                    if (isCompleted) {
+                      return (
+                        <div className="px-4 py-2 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-xs font-bold flex items-center space-x-1.5 self-start sm:self-auto shrink-0 shadow-2xs">
+                          <CheckIcon className="w-4 h-4 text-emerald-600" />
+                          <span>Action Completed</span>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        onClick={() => onLaunchWorkflow(item.actionPayload.recommendedWorkflow)}
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-xs flex items-center space-x-1.5 self-start sm:self-auto cursor-pointer shrink-0"
+                      >
+                        <span>Execute Action</span>
+                        <ArrowRightIcon className="w-4 h-4 ml-1" />
+                      </button>
+                    );
+                  })()
                 )}
               </div>
             ))
@@ -271,13 +297,35 @@ export function GovernmentInbox({ inboxItems, onLaunchWorkflow }: GovernmentInbo
                 </div>
 
                 {item.actionWorkflowCode && (
-                  <button
-                    onClick={() => onLaunchWorkflow(item.actionWorkflowCode)}
-                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-xs flex items-center space-x-1.5 self-start sm:self-auto cursor-pointer shrink-0"
-                  >
-                    <span>{item.actionLabel || 'Take Action'}</span>
-                    <ArrowRightIcon className="w-4 h-4 ml-1" />
-                  </button>
+                  (() => {
+                    const isCompleted =
+                      item.isResolved ||
+                      applications.some(
+                        (a) =>
+                          (a.workflowCode === item.actionWorkflowCode ||
+                            a.workflowTitle?.toUpperCase().includes(item.actionWorkflowCode.replace(/_/g, ' '))) &&
+                          a.universalStatus === 'COMPLETED'
+                      );
+
+                    if (isCompleted) {
+                      return (
+                        <div className="px-4 py-2 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-xs font-bold flex items-center space-x-1.5 self-start sm:self-auto shrink-0 shadow-2xs">
+                          <CheckIcon className="w-4 h-4 text-emerald-600" />
+                          <span>Action Resolved</span>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        onClick={() => onLaunchWorkflow(item.actionWorkflowCode)}
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-xs flex items-center space-x-1.5 self-start sm:self-auto cursor-pointer shrink-0"
+                      >
+                        <span>{item.actionLabel || 'Take Action'}</span>
+                        <ArrowRightIcon className="w-4 h-4 ml-1" />
+                      </button>
+                    );
+                  })()
                 )}
               </div>
             ))

@@ -71,6 +71,20 @@ export class ActionCenterService {
       });
     }
 
+    // Completed Workflows Precedence
+    const completedRuns = await db
+      .select()
+      .from(schema.workflowRuns)
+      .where(
+        and(
+          eq(schema.workflowRuns.citizenId, citizenId),
+          eq(schema.workflowRuns.state, 'COMPLETED')
+        )
+      );
+    const completedWorkflowCodes = new Set(
+      completedRuns.map((r) => r.workflowCode).filter(Boolean)
+    );
+
     // 2. Proactive Findings (Active & Acknowledged) - Filtered by Precedence Arbiter
     const findings = await db
       .select()
@@ -86,8 +100,11 @@ export class ActionCenterService {
     for (const f of findings) {
       if (f.status === 'RESOLVED' || f.status === 'OBSOLETE') continue;
 
-      // Precedence Arbiter: Suppress raw finding if already elevated into an active Action Plan
+      // Precedence Arbiter: Suppress raw finding if already elevated into an active Action Plan or completed
       if (f.recommendedActionPlanCode && addressedFindingCodes.has(f.recommendedActionPlanCode)) {
+        continue;
+      }
+      if (f.recommendedWorkflowCode && completedWorkflowCodes.has(f.recommendedWorkflowCode)) {
         continue;
       }
 

@@ -646,6 +646,42 @@ export async function buildApp() {
     return { items };
   });
 
+  // 3b. Resolve Inbox Item
+  server.post<{ Params: { id: string } }>('/api/citizen/inbox/:id/resolve', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+    const db = await getDb();
+
+    await db
+      .update(schema.governmentInbox)
+      .set({
+        isResolved: true,
+        isRead: true,
+      })
+      .where(
+        and(
+          eq(schema.governmentInbox.id, id),
+          eq(schema.governmentInbox.citizenId, authCitizenId)
+        )
+      );
+
+    eventBus.publish({
+      eventId: crypto.randomUUID(),
+      eventType: 'GOVERNMENT_INBOX_UPDATED',
+      citizenId: authCitizenId,
+      aggregateType: 'CITIZEN',
+      aggregateId: id,
+      payload: { inboxId: id, action: 'RESOLVED' },
+      provenance: {
+        source: 'USER_ACTION',
+        correlationId: crypto.randomUUID(),
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    return { success: true };
+  });
+
   // 4. Verifiable Documents Vault (Scoped)
   server.get('/api/citizen/vault', async (request) => {
     const authCitizenId = getAuthenticatedCitizenId(request);
@@ -1238,6 +1274,45 @@ export async function buildApp() {
       });
     }
     return { success: dismissed };
+  });
+
+  // 8i-2. Proactive Findings - Resolve
+  server.post<{
+    Params: { id: string };
+  }>('/api/citizen/proactive-findings/:id/resolve', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const { id } = request.params;
+    const db = await getDb();
+
+    await db
+      .update(schema.proactiveFindings)
+      .set({
+        status: 'RESOLVED',
+        resolvedAt: new Date(),
+        isDismissed: true,
+      })
+      .where(
+        and(
+          eq(schema.proactiveFindings.id, id),
+          eq(schema.proactiveFindings.citizenId, authCitizenId)
+        )
+      );
+
+    eventBus.publish({
+      eventId: crypto.randomUUID(),
+      eventType: 'GOVERNMENT_INBOX_UPDATED',
+      citizenId: authCitizenId,
+      aggregateType: 'CITIZEN',
+      aggregateId: id,
+      payload: { findingId: id, action: 'RESOLVED' },
+      provenance: {
+        source: 'USER_ACTION',
+        correlationId: crypto.randomUUID(),
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    return { success: true };
   });
 
   // 8j. Proactive Findings - Snooze

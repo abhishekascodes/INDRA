@@ -357,6 +357,7 @@ export function App() {
             {activeTab === 'inbox' && (
               <GovernmentInbox
                 inboxItems={inboxItems}
+                applications={applications}
                 onLaunchWorkflow={handleLaunchWorkflow}
               />
             )}

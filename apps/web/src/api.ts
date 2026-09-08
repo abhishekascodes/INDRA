@@ -587,3 +587,22 @@ export async function resetSyntheticWorkspace(): Promise<{
   return data;
 }
 
+export async function resolveProactiveFinding(findingId: string) {
+  const res = await apiFetch(`${API_BASE}/citizen/proactive-findings/${findingId}/resolve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error('Failed to resolve proactive finding');
+  return res.json();
+}
+
+export async function resolveInboxItem(inboxId: string) {
+  const res = await apiFetch(`${API_BASE}/citizen/inbox/${inboxId}/resolve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error('Failed to resolve inbox item');
+  return res.json();
+}
+
+
