@@ -534,3 +534,22 @@ export async function fetchCapabilitiesList() {
   if (!res.ok) throw new Error('Failed to load capabilities list');
   return res.json();
 }
+
+export async function resetSyntheticWorkspace(): Promise<{
+  success: boolean;
+  message: string;
+  citizenId: string;
+  baseline: any;
+}> {
+  const res = await apiFetch(`${API_BASE}/citizen/reset-workspace`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to reset synthetic workspace');
+  }
+  return data;
+}
+

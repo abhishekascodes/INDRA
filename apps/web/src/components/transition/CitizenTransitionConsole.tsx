@@ -10,6 +10,7 @@ import {
   resolveTransitionContradiction,
   fetchFaultSimulationStatus,
   setFaultSimulation,
+  resetSyntheticWorkspace,
 } from '../../api.js';
 import {
   ShieldCheckIcon,
@@ -64,6 +65,22 @@ export function CitizenTransitionConsole({
       setIsSimulatingOutage(next);
     } catch (err: any) {
       setErrorMsg(`Failed to toggle simulation: ${err.message}`);
+    }
+  };
+
+  const handleResetDemoWorkspace = async () => {
+    try {
+      setIsLoading(true);
+      setErrorMsg(null);
+      await resetSyntheticWorkspace();
+      setActiveTransition(null);
+      setRecentTransitions([]);
+      await checkSimulationStatus();
+      if (onRefreshCitizen) onRefreshCitizen();
+    } catch (err: any) {
+      setErrorMsg(`Failed to reset workspace: ${err.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -282,13 +299,23 @@ export function CitizenTransitionConsole({
               {isSimulatingOutage ? 'Simulated 503 Outage Active' : 'Online'})
             </span>
           </div>
-          <button
-            type="button"
-            onClick={toggleBhoomiOutage}
-            className="text-2xs font-medium text-[#0F172A] underline hover:text-black cursor-pointer"
-          >
-            {isSimulatingOutage ? 'Turn Off Outage Simulation' : 'Simulate Bhoomi 503 Outage'}
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={toggleBhoomiOutage}
+              className="text-2xs font-medium text-[#0F172A] underline hover:text-black cursor-pointer"
+            >
+              {isSimulatingOutage ? 'Turn Off Outage Simulation' : 'Simulate Bhoomi 503 Outage'}
+            </button>
+            <span className="text-slate-300">·</span>
+            <button
+              type="button"
+              onClick={handleResetDemoWorkspace}
+              className="text-2xs font-medium text-slate-600 hover:text-slate-900 underline cursor-pointer"
+            >
+              Reset synthetic workspace
+            </button>
+          </div>
         </div>
 
         {errorMsg && (

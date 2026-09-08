@@ -9,6 +9,7 @@ import {
   getDb,
   schema,
   seedDatabase,
+  resetCitizenWorkspace,
   PRIYA_SHARMA_ID,
   AARAV_PATEL_ID,
   hashPassword,
@@ -590,6 +591,46 @@ export async function buildApp() {
         pfBalance: e.pfBalance,
       })),
     };
+  });
+
+  // 2b. Reset Synthetic Citizen Workspace (Returns citizen to clean seeded evaluation baseline)
+  server.post('/api/citizen/reset-workspace', async (request, reply) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    if (!authCitizenId) {
+      return reply.status(401).send({ error: 'Unauthorized', code: 'UNAUTHORIZED' });
+    }
+
+    try {
+      const db = await getDb();
+      const baseline = await resetCitizenWorkspace(db, authCitizenId);
+
+      // Reset in-memory SPI adapter simulation state as well
+      propertySpiAdapter.setSimulationMode({
+        simulateOutage: false,
+        failNextRequest: false,
+      });
+
+      await logAuthEvent(
+        'RESET_SYNTHETIC_WORKSPACE',
+        'SUCCESS',
+        (request as any).authenticatedUser?.id,
+        authCitizenId,
+        request.ip || '127.0.0.1',
+        { citizenId: authCitizenId, baseline }
+      );
+
+      return {
+        success: true,
+        message: 'Synthetic workspace reset to clean seeded evaluation baseline successfully.',
+        citizenId: authCitizenId,
+        baseline,
+      };
+    } catch (err: any) {
+      return reply.status(500).send({
+        error: `Failed to reset synthetic workspace: ${err.message}`,
+        code: 'RESET_FAILED',
+      });
+    }
   });
 
   // 3. Government Action Inbox (Scoped)

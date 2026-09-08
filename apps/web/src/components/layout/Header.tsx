@@ -22,6 +22,7 @@ interface HeaderProps {
   citizenName?: string;
   citizenLocation?: string;
   onLogout?: () => void;
+  onResetWorkspace?: () => Promise<void>;
 }
 
 export function Header({
@@ -31,9 +32,25 @@ export function Header({
   citizenName = 'Aarav Patel',
   citizenLocation = 'Bengaluru, KA',
   onLogout,
+  onResetWorkspace,
 }: HeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleConfirmReset = async () => {
+    if (!onResetWorkspace) return;
+    try {
+      setIsResetting(true);
+      await onResetWorkspace();
+      setShowResetModal(false);
+    } catch (err) {
+      console.error('Failed to reset synthetic workspace:', err);
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -226,7 +243,24 @@ export function Header({
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 space-y-1">
+                {onResetWorkspace && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      setShowResetModal(true);
+                    }}
+                    className="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left flex items-center justify-between cursor-pointer"
+                  >
+                    <span className="flex items-center space-x-2">
+                      <RefreshIcon className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Reset synthetic workspace</span>
+                    </span>
+                    <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Demo</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => {
@@ -244,6 +278,61 @@ export function Header({
         </div>
 
       </div>
+
+      {/* Synthetic Workspace Reset Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+          <div className="bg-white border border-[#CBD5E1] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-scaleUp">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center font-bold">
+                <RefreshIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-[#0F172A] tracking-tight uppercase">
+                  Reset Synthetic Workspace
+                </h3>
+                <p className="text-[11px] font-semibold text-[#64748B]">
+                  Synthetic Evaluation & Demonstration Environment
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#475569] leading-relaxed">
+              This returns this synthetic citizen to the clean evaluation starting state. Your account remains intact.
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-1">
+              <div className="font-bold text-slate-800">What will be reset:</div>
+              <div>• Completed and suspended workflow runs & state transitions</div>
+              <div>• Simulated institutional failure states & contradictions</div>
+              <div>• Created demo properties, filings, and test receipts</div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                disabled={isResetting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReset}
+                disabled={isResetting}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#0F172A] hover:bg-slate-800 text-white cursor-pointer disabled:opacity-50 flex items-center space-x-1.5 shadow-xs"
+              >
+                {isResetting ? (
+                  <span>Resetting...</span>
+                ) : (
+                  <span>Reset workspace</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

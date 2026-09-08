@@ -25,6 +25,7 @@ import {
   subscribeEvents,
   fetchAuthMe,
   logout,
+  resetSyntheticWorkspace,
 } from './api.js';
 
 export function App() {
@@ -195,6 +196,21 @@ export function App() {
   }, [authState.authenticated]);
 
   const [appError, setAppError] = useState<string | null>(null);
+  const [appNotice, setAppNotice] = useState<string | null>(null);
+
+  const handleResetWorkspace = async () => {
+    try {
+      setAppError(null);
+      await resetSyntheticWorkspace();
+      setAppNotice('Synthetic workspace reset to clean evaluation baseline successfully. Public registries synchronized.');
+      setActiveWorkflowRun(null);
+      await loadData();
+      window.location.hash = 'home';
+      setActiveTab('home');
+    } catch (err: any) {
+      setAppError(`Failed to reset synthetic workspace: ${err.message}`);
+    }
+  };
 
   const handleLaunchWorkflow = async (
     workflowCode: string,
@@ -259,10 +275,25 @@ export function App() {
             : undefined
         }
         onLogout={handleLogout}
+        onResetWorkspace={handleResetWorkspace}
       />
 
       {/* 2. MAIN APPLICATION CONTENT */}
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 space-y-4">
+        {appNotice && (
+          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-medium flex items-center justify-between animate-fadeIn">
+            <div className="flex items-center space-x-2">
+              <span className="font-bold">Confirmation:</span>
+              <span>{appNotice}</span>
+            </div>
+            <button
+              onClick={() => setAppNotice(null)}
+              className="text-emerald-700 hover:text-emerald-950 font-bold p-1 rounded cursor-pointer"
+            >
+              <CloseIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
         {appError && (
           <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs font-medium flex items-center justify-between animate-fadeIn">
             <div className="flex items-center space-x-2">
@@ -277,7 +308,7 @@ export function App() {
             </button>
           </div>
         )}
-        {isLoading ? (
+        {isLoading && !citizen ? (
           <div className="p-16 text-center text-xs text-[#64748B]">
             <div className="inline-block animate-spin w-6 h-6 border-2 border-[#0F172A] border-t-transparent rounded-full mb-3"></div>
             <div>Synchronizing verified public records...</div>
