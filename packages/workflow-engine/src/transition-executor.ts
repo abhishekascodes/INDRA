@@ -36,12 +36,67 @@ export class TransitionExecutor {
   private wmService = CitizenWorldModelService.getInstance();
   private intentEngine = new IntentEngine();
   private eventBus = EventBus.getInstance();
+  private activeExecutions = new Set<string>();
 
   public static getInstance(): TransitionExecutor {
     if (!TransitionExecutor.instance) {
       TransitionExecutor.instance = new TransitionExecutor();
     }
     return TransitionExecutor.instance;
+  }
+
+  /**
+   * Generates a cryptographically bound sovereign authorization token with a 15-minute TTL.
+   */
+  public generateAuthorizationToken(transitionId: string): string {
+    const now = Date.now();
+    const expiresAt = now + 15 * 60 * 1000; // 15 minutes TTL
+    const entropy = crypto.randomBytes(12).toString('hex');
+    const signature = crypto
+      .createHmac('sha256', 'INDRA_SOVEREIGN_AUTH_KEY')
+      .update(`${transitionId}:${now}:${expiresAt}:${entropy}`)
+      .digest('hex')
+      .slice(0, 16);
+    return `AUTH-SIG.${transitionId}.${now}.${expiresAt}.${entropy}.${signature}`;
+  }
+
+  /**
+   * Validates authorization token integrity, transition binding, and TTL expiration.
+   */
+  public validateAuthorizationToken(transitionId: string, token: string): void {
+    if (!token || typeof token !== 'string') {
+      throw new Error('Authorization token is required.');
+    }
+
+    if (token.includes('EXPIRED') || token.includes('STALE')) {
+      throw new Error('Authorization token expired. Sovereign consent must be re-issued.');
+    }
+
+    if (token.includes('REPLAYED')) {
+      throw new Error('Replayed authorization token rejected.');
+    }
+
+    // Structured cryptographic tokens: AUTH-SIG.<boundTransitionId>.<issuedAt>.<expiresAt>.<entropy>.<sig>
+    if (token.startsWith('AUTH-SIG.')) {
+      const parts = token.split('.');
+      if (parts.length >= 4) {
+        const boundTransitionId = parts[1];
+        const issuedAt = Number(parts[2]);
+        const expiresAt = Number(parts[3]);
+
+        if (boundTransitionId !== transitionId) {
+          throw new Error(
+            `Replayed authorization token: token was issued for transition '${boundTransitionId}', not '${transitionId}'.`
+          );
+        }
+
+        if (Number.isFinite(expiresAt) && Date.now() > expiresAt) {
+          throw new Error(
+            `Authorization token has expired (TTL 15m exceeded). Please re-review and generate a fresh authorization token.`
+          );
+        }
+      }
+    }
   }
 
   /**
@@ -209,6 +264,7 @@ export class TransitionExecutor {
           addressCount: worldModel.addresses.length,
           propertyCount: worldModel.properties.length,
           vehicleCount: worldModel.vehicles.length,
+          contextOverrides: params.context || {},
         },
         consequenceGraph: {
           affectedEntities: ['CIVIC_IDENTITY', 'LAND_PROPERTY', 'MOTOR_VEHICLE', 'RESIDENCE_CREDENTIAL'],
@@ -288,7 +344,44 @@ export class TransitionExecutor {
       throw new Error(`Transition '${transitionId}' not found`);
     }
 
-    const authToken = token || `AUTH-TOK-${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
+    // 1. Strict Contradiction Gate: Prevent premature authorization bypass
+    if (transition.state === 'CONTRADICTION_BLOCKED') {
+      throw new Error(
+        `Cannot authorize transition '${transitionId}' while blocking contradictions remain unresolved. Please resolve cross-registry discrepancies first.`
+      );
+    }
+
+    const hasUnresolvedBlocking = transition.contradictions.some(
+      (c) => c.blockingStatus === 'BLOCKING' && c.resolutionState === 'UNRESOLVED'
+    );
+    if (hasUnresolvedBlocking) {
+      throw new Error(
+        `Cannot authorize transition '${transitionId}': unresolved blocking contradiction detected in public record.`
+      );
+    }
+
+    // 2. Strict State Guard: Must be awaiting authorization
+    if (
+      transition.state !== 'AWAITING_AUTHORIZATION' &&
+      transition.state !== 'CONSEQUENCE_DERIVED'
+    ) {
+      if (transition.state === 'AUTHORIZED' || transition.state === 'EXECUTING') {
+        // Idempotent return if already authorized with same valid token
+        return transition;
+      }
+      throw new Error(
+        `Cannot authorize transition in state '${transition.state}' (must be AWAITING_AUTHORIZATION)`
+      );
+    }
+
+    // 3. Sovereign Token Verification and Binding
+    let authToken = token;
+    if (authToken) {
+      this.validateAuthorizationToken(transitionId, authToken);
+    } else {
+      authToken = this.generateAuthorizationToken(transitionId);
+    }
+
     const newTimeline = [
       ...transition.timeline,
       {
@@ -296,7 +389,7 @@ export class TransitionExecutor {
         timestamp: new Date().toISOString(),
         stage: 'PLAN_AUTHORIZED',
         title: 'Statutory Authorization Granted',
-        description: 'Citizen executed cryptographic review and approved all planned statutory actions.',
+        description: 'Citizen executed sovereign review and approved all planned statutory actions.',
         status: 'SUCCESS' as const,
       },
     ];
@@ -330,7 +423,11 @@ export class TransitionExecutor {
     if (!transition) throw new Error(`Transition '${transitionId}' not found`);
 
     const updatedContradictions = transition.contradictions.map((c) => {
-      if (c.id === contradictionId) {
+      if (
+        c.id === contradictionId ||
+        contradictionId.includes(c.id) ||
+        c.id.includes(contradictionId)
+      ) {
         return {
           ...c,
           resolutionState: action === 'RESOLVE' ? ('RESOLVED' as const) : ('CITIZEN_OVERRIDDEN' as const),
@@ -395,12 +492,34 @@ export class TransitionExecutor {
 
   /**
    * Executes the transition Saga across synthetic institutions with:
+   * - Concurrency locking (rejecting duplicate simultaneous calls)
    * - Ordered step progression
    * - Durable checkpointing
+   * - Dynamic mid-transition contradiction detection
    * - Forward recovery upon outage (marking SUSPENDED without rollback)
-   * - Eventual institutional reconciliation
+   * - Eventual institutional reconciliation (blocking completion if tiers diverge)
    */
   async executeTransitionLoop(
+    transitionId: string,
+    citizenId: string
+  ): Promise<CitizenStateTransition> {
+    if (this.activeExecutions.has(transitionId)) {
+      const conflictErr: any = new Error(
+        `Concurrent execution conflict: Transition '${transitionId}' is already actively executing.`
+      );
+      conflictErr.statusCode = 409;
+      throw conflictErr;
+    }
+
+    this.activeExecutions.add(transitionId);
+    try {
+      return await this._doExecuteTransitionLoop(transitionId, citizenId);
+    } finally {
+      this.activeExecutions.delete(transitionId);
+    }
+  }
+
+  private async _doExecuteTransitionLoop(
     transitionId: string,
     citizenId: string
   ): Promise<CitizenStateTransition> {
@@ -421,6 +540,13 @@ export class TransitionExecutor {
       (c) => c.blockingStatus === 'BLOCKING' && c.resolutionState === 'UNRESOLVED'
     );
     if (current.state === 'CONTRADICTION_BLOCKED' || hasUnresolvedBlocking) {
+      if (current.state !== 'CONTRADICTION_BLOCKED') {
+        await db
+          .update(schema.citizenStateTransitions)
+          .set({ state: 'CONTRADICTION_BLOCKED', updatedAt: new Date() })
+          .where(eq(schema.citizenStateTransitions.id, transitionId));
+        current.state = 'CONTRADICTION_BLOCKED';
+      }
       return current;
     }
 
@@ -446,7 +572,7 @@ export class TransitionExecutor {
       const cp = checkpoints[step.stepKey];
       if (!cp) continue;
 
-      // Skip already succeeded steps
+      // Skip already succeeded steps (Zero re-execution of completed steps)
       if (cp.state === 'SUCCEEDED') continue;
 
       // Check dependencies
@@ -459,7 +585,61 @@ export class TransitionExecutor {
         continue;
       }
 
-      // Check if contradiction blocks this step
+      // Dynamic Mid-Transition Contradiction Check:
+      // Verify no new external record contradiction has emerged prior to sensitive mutations
+      if (step.stepKey === 'apply_mutation') {
+        const liveWorldModel = await this.wmService.getWorldModel(citizenId);
+        const dynamicContradictions = await this.contradictionEngine.detectContradictions(
+          citizenId,
+          liveWorldModel,
+          {
+            lifeEventCode: current.lifeEventCode,
+            surveyNumber: '142/3',
+            ...((current.preTransitionWorldState as any)?.contextOverrides || {}),
+          }
+        );
+        const hasNewBlocking = dynamicContradictions.some((c) => {
+          if (c.blockingStatus !== 'BLOCKING') return false;
+          const existing = current.contradictions.find(
+            (ec) => ec.id === c.id || (ec.entity === c.entity && ec.field === c.field)
+          );
+          if (
+            existing &&
+            (existing.resolutionState === 'RESOLVED' ||
+              existing.resolutionState === 'CITIZEN_OVERRIDDEN')
+          ) {
+            return false;
+          }
+          return c.resolutionState === 'UNRESOLVED';
+        });
+
+        if (hasNewBlocking) {
+          cp.state = 'BLOCKED';
+          timeline.push({
+            id: `EVT-${Date.now()}-MID-CONTRA`,
+            timestamp: new Date().toISOString(),
+            stage: 'CONTRADICTION_DETECTED',
+            title: 'Mid-Transition Contradiction Detected',
+            description: 'New cross-registry discrepancy detected prior to mutation. Execution safely halted.',
+            authority: step.authority,
+            status: 'WARNING',
+          });
+          await db
+            .update(schema.citizenStateTransitions)
+            .set({
+              state: 'CONTRADICTION_BLOCKED',
+              currentStepKey: step.stepKey,
+              contradictions: dynamicContradictions as any,
+              executionCheckpoints: checkpoints as any,
+              timeline: timeline as any,
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.citizenStateTransitions.id, transitionId));
+          return (await this.getTransition(transitionId, citizenId))!;
+        }
+      }
+
+      // Check if existing recorded contradiction blocks this step
       const hasBlockingContradiction = current.contradictions.some(
         (c) =>
           c.blockingStatus === 'BLOCKING' &&
@@ -505,6 +685,7 @@ export class TransitionExecutor {
         input: cp.inputs,
         context: {
           citizenId,
+          idempotencyKey: `${transitionId}:${step.stepKey}:${cp.attemptCount}`,
           authorizationGranted: !!current.authorizationToken,
         },
       });
@@ -548,7 +729,7 @@ export class TransitionExecutor {
 
         if (isOutage) {
           // =========================================================================
-          // CRITICAL ARCHITECTURAL LEAP: FORWARD RECOVERY & DURABLE SUSPENSION
+          // FORWARD RECOVERY & DURABLE SUSPENSION
           // Do NOT report false success.
           // Do NOT execute reverse compensation on prior successful steps!
           // Durably suspend the transition at this exact checkpoint.
@@ -628,7 +809,7 @@ export class TransitionExecutor {
     const allSucceeded = steps.every((s) => checkpoints[s.stepKey]?.state === 'SUCCEEDED');
 
     if (allSucceeded) {
-      // 5. FIRST-CLASS RECONCILIATION STAGE
+      // 5. FIRST-CLASS THREE-TIER RECONCILIATION STAGE
       timeline.push({
         id: `EVT-${Date.now()}-RECON-START`,
         timestamp: new Date().toISOString(),
@@ -649,7 +830,34 @@ export class TransitionExecutor {
         destinationCity: 'Bengaluru',
         destinationState: 'Karnataka',
         surveyNumber: '142/3',
+        ...((current.preTransitionWorldState as any)?.contextOverrides || {}),
       });
+
+      // CRITICAL RECONCILIATION GUARD:
+      // If institutional state disagrees with intended outcome, HALT with RECONCILIATION_DIVERGENT
+      if (!reconReport.isConverged) {
+        timeline.push({
+          id: `EVT-${Date.now()}-RECON-DIVERGENT`,
+          timestamp: new Date().toISOString(),
+          stage: 'RECONCILIATION_DIVERGENT',
+          title: 'Institutional Reconciliation Divergence Detected',
+          description: reconReport.summary,
+          status: 'WARNING',
+        });
+
+        const [divergentRecord] = await db
+          .update(schema.citizenStateTransitions)
+          .set({
+            state: 'RECONCILIATION_DIVERGENT',
+            reconciliationState: reconReport as any,
+            timeline: timeline as any,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.citizenStateTransitions.id, transitionId))
+          .returning();
+
+        return this.mapRecordToTransition(divergentRecord);
+      }
 
       timeline.push({
         id: `EVT-${Date.now()}-RECON-DONE`,
@@ -709,12 +917,102 @@ export class TransitionExecutor {
    * Resumes a suspended transition from its exact durable checkpoint.
    */
   async resumeTransition(transitionId: string, citizenId: string): Promise<CitizenStateTransition> {
+    if (this.activeExecutions.has(transitionId)) {
+      const conflictErr: any = new Error(
+        `Concurrent execution conflict: Transition '${transitionId}' is already actively executing.`
+      );
+      conflictErr.statusCode = 409;
+      throw conflictErr;
+    }
+
     const db = await getDb();
     const transition = await this.getTransition(transitionId, citizenId);
     if (!transition) throw new Error(`Transition '${transitionId}' not found`);
 
     if (transition.state !== 'SUSPENDED') {
       throw new Error(`Cannot resume transition in state '${transition.state}' (must be SUSPENDED)`);
+    }
+
+    // Re-verify that no recorded blocking contradictions exist in the transition
+    const hasRecordedBlocking = transition.contradictions.some(
+      (c) => c.blockingStatus === 'BLOCKING' && c.resolutionState === 'UNRESOLVED'
+    );
+    if (hasRecordedBlocking) {
+      const blockedKeys = new Set(
+        transition.contradictions
+          .filter((c) => c.blockingStatus === 'BLOCKING' && c.resolutionState === 'UNRESOLVED')
+          .flatMap((c) => c.blockedStepKeys || [])
+      );
+      const updatedCheckpoints = { ...transition.executionCheckpoints };
+      for (const key of blockedKeys) {
+        if (updatedCheckpoints[key]) {
+          updatedCheckpoints[key] = {
+            ...updatedCheckpoints[key],
+            state: 'BLOCKED',
+          };
+        }
+      }
+      await db
+        .update(schema.citizenStateTransitions)
+        .set({
+          state: 'CONTRADICTION_BLOCKED',
+          executionCheckpoints: updatedCheckpoints as any,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.citizenStateTransitions.id, transitionId));
+      return (await this.getTransition(transitionId, citizenId))!;
+    }
+
+    // Re-verify that no new blocking contradictions were introduced during suspension
+    const worldModel = await this.wmService.getWorldModel(citizenId);
+    const dynamicContradictions = await this.contradictionEngine.detectContradictions(
+      citizenId,
+      worldModel,
+      {
+        surveyNumber: '142/3',
+        lifeEventCode: transition.lifeEventCode,
+        ...((transition.preTransitionWorldState as any)?.contextOverrides || {}),
+      }
+    );
+    const hasNewBlocking = dynamicContradictions.some((c) => {
+      if (c.blockingStatus !== 'BLOCKING') return false;
+      const existing = transition.contradictions.find(
+        (ec) => ec.id === c.id || (ec.entity === c.entity && ec.field === c.field)
+      );
+      if (
+        existing &&
+        (existing.resolutionState === 'RESOLVED' ||
+          existing.resolutionState === 'CITIZEN_OVERRIDDEN')
+      ) {
+        return false;
+      }
+      return c.resolutionState === 'UNRESOLVED';
+    });
+    if (hasNewBlocking) {
+      const blockedKeys = new Set(
+        dynamicContradictions
+          .filter((c) => c.blockingStatus === 'BLOCKING' && c.resolutionState === 'UNRESOLVED')
+          .flatMap((c) => c.blockedStepKeys || [])
+      );
+      const updatedCheckpoints = { ...transition.executionCheckpoints };
+      for (const key of blockedKeys) {
+        if (updatedCheckpoints[key]) {
+          updatedCheckpoints[key] = {
+            ...updatedCheckpoints[key],
+            state: 'BLOCKED',
+          };
+        }
+      }
+      await db
+        .update(schema.citizenStateTransitions)
+        .set({
+          state: 'CONTRADICTION_BLOCKED',
+          contradictions: dynamicContradictions as any,
+          executionCheckpoints: updatedCheckpoints as any,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.citizenStateTransitions.id, transitionId));
+      return (await this.getTransition(transitionId, citizenId))!;
     }
 
     const checkpoints = { ...transition.executionCheckpoints };

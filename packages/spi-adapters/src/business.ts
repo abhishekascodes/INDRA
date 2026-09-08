@@ -1,5 +1,5 @@
 import { getDb, schema } from '@indra/database';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 
 export interface ReserveCompanyNameInput {
   citizenId: string;
@@ -103,23 +103,44 @@ export class BusinessSpiAdapter {
     stateCode: string;
   }) {
     const db = await getDb();
-    const rows = await db
-      .select()
-      .from(schema.spiBusinessEntities)
-      .where(
-        and(
-          eq(schema.spiBusinessEntities.citizenId, input.citizenId),
-          eq(schema.spiBusinessEntities.id, input.entityId)
-        )
-      );
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-    if (rows.length === 0) {
+    let entity: any = null;
+
+    if (input.entityId && UUID_REGEX.test(input.entityId)) {
+      const rows = await db
+        .select()
+        .from(schema.spiBusinessEntities)
+        .where(
+          and(
+            eq(schema.spiBusinessEntities.citizenId, input.citizenId),
+            eq(schema.spiBusinessEntities.id, input.entityId)
+          )
+        );
+      if (rows.length > 0) {
+        entity = rows[0];
+      }
+    }
+
+    if (!entity) {
+      // Fallback: search for active/latest business entity belonging to citizen
+      const rows = await db
+        .select()
+        .from(schema.spiBusinessEntities)
+        .where(eq(schema.spiBusinessEntities.citizenId, input.citizenId))
+        .orderBy(desc(schema.spiBusinessEntities.createdAt))
+        .limit(1);
+      if (rows.length > 0) {
+        entity = rows[0];
+      }
+    }
+
+    if (!entity) {
       throw new Error(
-        `Precondition Failed: Business entity '${input.entityId}' not found for citizen '${input.citizenId}'.`
+        `Precondition Failed: No incorporated business entity found for citizen '${input.citizenId}'. Please complete company incorporation first.`
       );
     }
 
-    const entity = rows[0];
     const gstin = `${input.stateCode}${entity.pan}1Z8`;
     const today = new Date().toISOString().split('T')[0];
 
@@ -154,23 +175,44 @@ export class BusinessSpiAdapter {
     majorActivity: 'SERVICES' | 'MANUFACTURING';
   }) {
     const db = await getDb();
-    const rows = await db
-      .select()
-      .from(schema.spiBusinessEntities)
-      .where(
-        and(
-          eq(schema.spiBusinessEntities.citizenId, input.citizenId),
-          eq(schema.spiBusinessEntities.id, input.entityId)
-        )
-      );
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-    if (rows.length === 0) {
+    let entity: any = null;
+
+    if (input.entityId && UUID_REGEX.test(input.entityId)) {
+      const rows = await db
+        .select()
+        .from(schema.spiBusinessEntities)
+        .where(
+          and(
+            eq(schema.spiBusinessEntities.citizenId, input.citizenId),
+            eq(schema.spiBusinessEntities.id, input.entityId)
+          )
+        );
+      if (rows.length > 0) {
+        entity = rows[0];
+      }
+    }
+
+    if (!entity) {
+      // Fallback: search for active/latest business entity belonging to citizen
+      const rows = await db
+        .select()
+        .from(schema.spiBusinessEntities)
+        .where(eq(schema.spiBusinessEntities.citizenId, input.citizenId))
+        .orderBy(desc(schema.spiBusinessEntities.createdAt))
+        .limit(1);
+      if (rows.length > 0) {
+        entity = rows[0];
+      }
+    }
+
+    if (!entity) {
       throw new Error(
-        `Precondition Failed: Business entity '${input.entityId}' not found for citizen '${input.citizenId}'.`
+        `Precondition Failed: No incorporated business entity found for citizen '${input.citizenId}'. Please complete company incorporation first.`
       );
     }
 
-    const entity = rows[0];
     const udyamNumber = `UDYAM-KR-03-${Math.floor(1000000 + Math.random() * 9000000)}`;
     const today = new Date().toISOString().split('T')[0];
 

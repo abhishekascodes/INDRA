@@ -119,12 +119,19 @@ export class DigiLockerSpiAdapter {
    */
   async revokeCredential(input: { citizenId: string; documentId: string; reason: string }) {
     const db = await getDb();
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isUuid = input.documentId && UUID_REGEX.test(input.documentId);
+
+    const condition = isUuid
+      ? eq(schema.citizenDocuments.id, input.documentId)
+      : eq(schema.citizenDocuments.documentNumber, input.documentId);
+
     await db
       .update(schema.citizenDocuments)
       .set({
         verificationStatus: 'REVOKED',
       })
-      .where(eq(schema.citizenDocuments.id, input.documentId));
+      .where(condition);
 
     return {
       success: true,
@@ -140,10 +147,17 @@ export class DigiLockerSpiAdapter {
    */
   async verifyDocHash(input: { citizenId: string; documentId: string; hashAlgorithm?: string }) {
     const db = await getDb();
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isUuid = input.documentId && UUID_REGEX.test(input.documentId);
+
+    const condition = isUuid
+      ? eq(schema.citizenDocuments.id, input.documentId)
+      : eq(schema.citizenDocuments.documentNumber, input.documentId);
+
     const rows = await db
       .select()
       .from(schema.citizenDocuments)
-      .where(eq(schema.citizenDocuments.id, input.documentId));
+      .where(condition);
 
     const doc = rows[0];
     const merkleRoot = `merkle:root:sha256:${Date.now().toString(16)}`;

@@ -83,7 +83,7 @@ export const WorldModelInspector: React.FC<WorldModelInspectorProps> = ({ citize
           <div className="sm:text-right shrink-0">
             <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
               <ShieldCheckIcon className="w-4 h-4 mr-1.5 text-emerald-600" />
-              100% Verified Ground Truth
+              100% Verified Official Records
             </span>
             <p className="text-xs text-[#64748B] mt-1 font-medium">Record: {worldModel.profile.fullName}</p>
           </div>

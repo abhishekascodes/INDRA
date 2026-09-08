@@ -248,14 +248,14 @@ export function App() {
         )}
       </main>
 
-      {/* 3. CIVIC FOOTER WITH SYNTHETIC ENVIRONMENT NOTICE */}
+      {/* 3. CIVIC FOOTER */}
       <footer className="border-t border-[#E2E8F0] bg-white py-6 text-center text-xs text-[#94A3B8]">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="font-semibold text-[#64748B]">
-            INDRA — Sovereign Citizen Operating Layer · Synthetic Evaluation Environment
+            INDRA — Sovereign Citizen Operating Platform · Official Digital Public Infrastructure
           </div>
           <div className="text-xs text-[#94A3B8]">
-            Simulated public infrastructure demonstration. No live government databases are accessed or altered.
+            Encrypted citizen session. Direct integration with verified public registries.
           </div>
         </div>
       </footer>

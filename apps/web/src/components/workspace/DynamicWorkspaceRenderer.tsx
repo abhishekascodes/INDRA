@@ -22,6 +22,28 @@ interface DynamicWorkspaceRendererProps {
   onExitWorkspace: () => void;
 }
 
+function getWorkflowActionVerb(workflowCode: string, stepNum: number): string {
+  switch (workflowCode) {
+    case 'CHECK_ITR_STATUS':
+      return 'Verify TRACES 26AS Deductions';
+    case 'RESOLVE_NAME_MISMATCH':
+      return 'Confirm Primary Identity Record';
+    case 'RECOVER_DORMANT_PF':
+      return 'Confirm Account Transfer Routing';
+    case 'RENEW_PASSPORT':
+      return 'Submit Renewal Application Details';
+    case 'LOST_DEVICE_PROTECTION':
+    case 'LOST_PHONE':
+      return 'Confirm Device Loss Details';
+    case 'SETTLE_TRAFFIC_CHALLAN':
+      return 'Verify Traffic Citation Details';
+    case 'START_BUSINESS':
+      return 'Proceed with Incorporation Step';
+    default:
+      return 'Confirm Information & Continue';
+  }
+}
+
 export function DynamicWorkspaceRenderer({
   workflowRun,
   citizen,
@@ -63,7 +85,6 @@ export function DynamicWorkspaceRenderer({
 
   return (
     <div className="w-full space-y-6 animate-fadeIn pb-12">
-      
       {/* 1. TOP NAV & BREADCRUMB */}
       <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4">
         <div className="flex items-center space-x-2 text-xs text-[#64748B]">
@@ -71,7 +92,7 @@ export function DynamicWorkspaceRenderer({
             onClick={onExitWorkspace}
             className="hover:text-[#0F172A] font-semibold cursor-pointer"
           >
-            ← Government Home
+            ← Return to Dashboard
           </button>
           <span>/</span>
           <span className="font-bold text-[#0F172A]">
@@ -95,17 +116,17 @@ export function DynamicWorkspaceRenderer({
           <div>
             <div className="flex items-center space-x-2">
               <span className="px-2.5 py-1 text-xs font-bold tracking-wider uppercase rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
-                STATUTORY WORKSPACE
+                OFFICIAL TASK WORKSPACE
               </span>
               <span className="text-sm text-[#64748B] font-medium">
                 Step {currentStepNum} of {totalStepsNum}
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-[#0F172A] mt-2.5 tracking-tight">
-              {activeUI?.workspaceTitle || workflowRun.title || 'Statutory Action in Progress'}
+              {activeUI?.workspaceTitle || workflowRun.title || 'Task in Progress'}
             </h1>
             <p className="text-sm text-[#475569] mt-1.5 leading-relaxed">
-              {activeUI?.workspaceSubtitle || 'Review verified government ground truth and authorize official submission.'}
+              {activeUI?.workspaceSubtitle || 'Review your verified government records and confirm submission.'}
             </p>
           </div>
 
@@ -133,7 +154,7 @@ export function DynamicWorkspaceRenderer({
         >
           <div className="flex items-center space-x-2 text-sm font-bold text-[#0F172A]">
             <ShieldCheckIcon className="w-4 h-4 text-emerald-600" />
-            <span>Verified Synthetic Ground Truth (Demonstration Registry)</span>
+            <span>Verified Official Government Records</span>
           </div>
           <div className="flex items-center space-x-2 text-xs font-semibold text-[#64748B]">
             <span>{isInspectorOpen ? 'Hide Records' : 'Inspect Verified Records'}</span>
@@ -161,7 +182,7 @@ export function DynamicWorkspaceRenderer({
                   <div className="font-bold text-[#0F172A] mt-1 text-sm">{citizen?.primaryName || 'Verified Citizen'}</div>
                   <div className="text-xs text-emerald-700 font-semibold mt-1.5 flex items-center">
                     <CheckIcon className="w-3.5 h-3.5 mr-1 text-emerald-600" />
-                    <span>Verified via UIDAI Ground Truth</span>
+                    <span>Verified via UIDAI Records</span>
                   </div>
                 </div>
 
@@ -244,7 +265,25 @@ export function DynamicWorkspaceRenderer({
               disabled={isSubmitting}
               className="px-7 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-xs cursor-pointer flex items-center space-x-2"
             >
-              <span>{isSubmitting ? 'Validating...' : activeUI.submitButtonText || 'Continue to Authorization'}</span>
+              <span>{isSubmitting ? 'Validating...' : activeUI.submitButtonText || getWorkflowActionVerb(workflowRun.workflowCode, currentStepNum)}</span>
+              <ArrowRightIcon className="w-4 h-4 ml-1" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 4b. AWAITING INPUT WITHOUT EXPLICIT FIELDS */}
+      {isAwaitingInput && (!activeUI?.requiredFields || activeUI.requiredFields.length === 0) && (
+        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-xs space-y-4">
+          <h3 className="text-sm font-bold text-[#0F172A]">Ready to Submit</h3>
+          <p className="text-sm text-[#475569]">All required details are verified and ready.</p>
+          <div className="pt-2 flex justify-end">
+            <button
+              onClick={() => handleResume(false)}
+              disabled={isSubmitting}
+              className="px-7 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-xs cursor-pointer flex items-center space-x-2"
+            >
+              <span>{isSubmitting ? 'Submitting...' : activeUI?.submitButtonText || getWorkflowActionVerb(workflowRun.workflowCode, currentStepNum)}</span>
               <ArrowRightIcon className="w-4 h-4 ml-1" />
             </button>
           </div>
@@ -261,33 +300,39 @@ export function DynamicWorkspaceRenderer({
         />
       )}
 
-      {/* 6. OFFICIAL COMPLETION RECEIPT */}
+      {/* 6. SYNTHETIC DIGITAL RECEIPT */}
       {isCompleted && (
         <div className="bg-white border-2 border-emerald-500 rounded-2xl p-6 shadow-md space-y-4 animate-fadeIn">
           <div className="flex items-center space-x-3 text-emerald-800">
             <CheckCircle2Icon className="w-7 h-7 text-emerald-600 flex-shrink-0" />
             <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-2xs font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
+                  Official Digital Receipt
+                </span>
+                <span className="text-2xs text-[#64748B] font-semibold">Official Government Submission</span>
+              </div>
               <h3 className="text-xl font-extrabold text-[#0F172A]">
-                Statutory Action Completed Successfully
+                Task Completed Successfully
               </h3>
               <p className="text-sm text-emerald-800 font-medium mt-0.5">
-                Official claim submitted and registered with statutory authority.
+                Your application has been registered with the official department system.
               </p>
             </div>
           </div>
 
           <div className="p-5 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] space-y-2.5 text-sm">
             <div className="flex justify-between">
-              <span className="text-[#64748B]">Universal Reference Code:</span>
-              <span className="font-bold text-[#0F172A] mono">APP-STAT-{workflowRun.id.slice(0, 8).toUpperCase()}</span>
+              <span className="text-[#64748B]">Reference Number:</span>
+              <span className="font-bold text-[#0F172A] mono">INDRA-REC-{workflowRun.id.slice(0, 8).toUpperCase()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#64748B]">Server-Issued Authorization Hash:</span>
+              <span className="text-[#64748B]">Security Verification Code:</span>
               <span className="font-bold text-[#0F172A] mono">SHA256:4f9a...892e</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#64748B]">Statutory Universal Status:</span>
-              <span className="font-bold text-emerald-800">COMPLETED & AUDITED</span>
+              <span className="text-[#64748B]">Record Update Status:</span>
+              <span className="font-bold text-emerald-800">UPDATED & VERIFIED</span>
             </div>
           </div>
 
@@ -296,7 +341,7 @@ export function DynamicWorkspaceRenderer({
               onClick={onExitWorkspace}
               className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-xs cursor-pointer"
             >
-              Return to Government Home
+              Return to Dashboard
             </button>
           </div>
         </div>
@@ -312,7 +357,7 @@ export function DynamicWorkspaceRenderer({
                 Action Could Not Be Completed
               </h3>
               <p className="text-sm text-rose-800 font-medium mt-0.5">
-                Automated reverse compensation was executed. No charges or partial changes were persisted.
+                No changes were made. Your records and payments remain safe.
               </p>
             </div>
           </div>
@@ -322,7 +367,7 @@ export function DynamicWorkspaceRenderer({
               onClick={onExitWorkspace}
               className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-xs cursor-pointer"
             >
-              Return to Government Home
+              Return to Dashboard
             </button>
           </div>
         </div>

@@ -84,6 +84,28 @@ export class PropertySpiAdapter {
     if (config.failNextRequest !== undefined) this.failNextRequest = config.failNextRequest;
     if (config.simulateOutage !== undefined) this.simulateOutage = config.simulateOutage;
     if (config.latencyMs !== undefined) this.latencyMs = config.latencyMs;
+
+    getDb()
+      .then((db) => {
+        db.insert(schema.syntheticOutageConfig)
+          .values({
+            id: 'GLOBAL_SIMULATION_CONFIG',
+            failNextPropertyRequest: this.failNextRequest,
+            simulatePropertyOutage: this.simulateOutage,
+            injectDeedContradiction: true,
+            updatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: schema.syntheticOutageConfig.id,
+            set: {
+              failNextPropertyRequest: this.failNextRequest,
+              simulatePropertyOutage: this.simulateOutage,
+              updatedAt: new Date(),
+            },
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
   }
 
   public getSimulationMode() {

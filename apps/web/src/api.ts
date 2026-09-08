@@ -489,5 +489,27 @@ export async function fetchFaultSimulationStatus(): Promise<{
   return res.json();
 }
 
+export async function executeCapability(
+  capabilityId: string,
+  input: Record<string, unknown> = {},
+  authorize: boolean = false
+) {
+  const res = await fetch(`${API_BASE}/capabilities/execute`, {
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ capabilityId, input, authorize }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to execute capability');
+  }
+  return res.json();
+}
 
-
+export async function fetchCapabilitiesList() {
+  const res = await fetch(`${API_BASE}/capabilities`, {
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to load capabilities list');
+  return res.json();
+}

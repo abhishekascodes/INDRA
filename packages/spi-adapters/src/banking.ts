@@ -162,6 +162,9 @@ export class AccountAggregatorSpiAdapter {
    * Revokes an active Account Aggregator consent artifact.
    */
   public async revokeConsent(consentArtifactId: string, citizenId: string): Promise<boolean> {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!consentArtifactId || !UUID_REGEX.test(consentArtifactId)) return false;
+
     const db = await getDb();
     const rows = await db
       .select()

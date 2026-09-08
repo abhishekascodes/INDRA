@@ -436,6 +436,9 @@ export class ProactiveCitizenEngine {
     citizenId: string,
     days: number = 7
   ): Promise<boolean> {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!findingId || !UUID_REGEX.test(findingId)) return false;
+
     const db = await getDb();
     const rows = await db
       .select()
@@ -475,6 +478,9 @@ export class ProactiveCitizenEngine {
     citizenId: string,
     reason?: string
   ): Promise<boolean> {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!findingId || !UUID_REGEX.test(findingId)) return false;
+
     const db = await getDb();
     const rows = await db
       .select()
@@ -512,6 +518,11 @@ export class ProactiveCitizenEngine {
     findingId: string,
     citizenId: string
   ): Promise<{ actionLink: FindingActionLink; finding: ProactiveFinding }> {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!findingId || !UUID_REGEX.test(findingId)) {
+      throw new Error(`Invalid finding identifier '${findingId}'.`);
+    }
+
     const db = await getDb();
     const rows = await db
       .select()

@@ -180,6 +180,9 @@ export class ActionPlanEngine {
    * Fetches an Action Plan by ID with all constituent steps and current states.
    */
   async getActionPlan(planId: string, citizenId?: string): Promise<ActionPlan | null> {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!planId || !UUID_REGEX.test(planId)) return null;
+
     const db = await getDb();
     const plans = await db
       .select()
@@ -390,13 +393,32 @@ export class ActionPlanEngine {
       );
     }
 
+    // Collect outputs from completed dependency steps to propagate downstream (e.g. cinOrId -> entityId)
+    const depOutputs: Record<string, any> = {};
+    for (const depKey of step.dependencies) {
+      const depStep = plan.steps.find((s) => s.stepKey === depKey);
+      if (depStep && depStep.outputPayload && typeof depStep.outputPayload === 'object') {
+        Object.assign(depOutputs, depStep.outputPayload);
+      }
+    }
+
     const db = await getDb();
     // Tampering defense: force citizenId to authenticated citizen
-    const inputPayload = {
+    const inputPayload: Record<string, any> = {
+      ...depOutputs,
       ...step.outputPayload,
       ...(overrideInput || {}),
       citizenId,
     };
+
+    // Propagate entityId from dependency outputs (e.g. cinOrId from incorporate_company)
+    if (!inputPayload.entityId || inputPayload.entityId === '') {
+      if (depOutputs.cinOrId) {
+        inputPayload.entityId = depOutputs.cinOrId;
+      } else if (depOutputs.entityId) {
+        inputPayload.entityId = depOutputs.entityId;
+      }
+    }
 
     const execResult = await this.stepExecutor.execute({
       capabilityId: step.capabilityId,

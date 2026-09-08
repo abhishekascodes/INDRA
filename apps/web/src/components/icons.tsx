@@ -71,6 +71,14 @@ export function ArrowRightIcon({ className = "w-4 h-4" }: { className?: string }
   );
 }
 
+export function ArrowLeftIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
 export function CheckIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -170,6 +178,15 @@ export function CloseIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
+export function PlusIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
 export function EditIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -209,24 +226,21 @@ export function UserIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-export function IndraEmblemIcon({ className = "w-9 h-9" }: { className?: string }) {
+export function InfoIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="40" height="40" rx="10" fill="#0F172A" />
-      {/* Outer decorative ring */}
-      <circle cx="20" cy="20" r="14" stroke="#4F46E5" strokeWidth="1.5" strokeDasharray="3 2" />
-      {/* Inner solid ring */}
-      <circle cx="20" cy="20" r="10" stroke="#F59E0B" strokeWidth="1.5" />
-      {/* Center Chakra spokes */}
-      <circle cx="20" cy="20" r="3" fill="#F59E0B" />
-      <line x1="20" y1="10" x2="20" y2="17" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="20" y1="23" x2="20" y2="30" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="10" y1="20" x2="17" y2="20" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="23" y1="20" x2="30" y2="20" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="12.93" y1="12.93" x2="17.88" y2="17.88" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round" />
-      <line x1="22.12" y1="22.12" x2="27.07" y2="27.07" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round" />
-      <line x1="27.07" y1="12.93" x2="22.12" y2="17.88" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round" />
-      <line x1="17.88" y1="22.12" x2="12.93" y2="27.07" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round" />
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" strokeLinecap="round" />
+      <line x1="12" y1="8" x2="12.01" y2="8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IndraEmblemIcon({ className = "w-8 h-8" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 1024 1024" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M512 480a224 224 0 1 0-224-224 224 224 0 0 0 224 224z m0-384a160 160 0 1 1-160 160 160 160 0 0 1 160-160zM989.44 947.84a32 32 0 0 0-6.72-10.56 37.12 37.12 0 0 0-10.56-6.72 32 32 0 0 0-34.88 6.72 36.8 36.8 0 0 0-6.72 10.56 26.56 26.56 0 0 0-2.56 12.16 32 32 0 0 0 2.24 12.16 39.04 39.04 0 0 0 7.04 10.56 32 32 0 0 0 34.88 6.72 37.12 37.12 0 0 0 10.56-6.72 32 32 0 0 0 6.72-34.88zM832 928h-160a32 32 0 0 0 0 64h160a32 32 0 0 0 0-64z" />
+      <path d="M941.44 862.08a32 32 0 0 0 18.56-41.6 480 480 0 0 0-926.4 137.28 32 32 0 0 0 32 34.24H544a32 32 0 0 0 0-64H101.44a416 416 0 0 1 800-84.48 32 32 0 0 0 40 18.56z" />
     </svg>
   );
 }

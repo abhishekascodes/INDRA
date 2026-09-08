@@ -300,10 +300,16 @@ export async function buildApp() {
   // 8. Resume Workflow (Enforcing citizen scoping)
   server.post<{
     Params: { id: string };
-    Body: { input?: Record<string, unknown>; authorize?: boolean };
+    Body: { input?: Record<string, unknown>; formData?: Record<string, unknown>; authorize?: boolean };
   }>('/api/workflows/:id/resume', async (request, reply) => {
     const { id } = request.params;
-    const { input, authorize } = request.body || {};
+    const { input, formData, authorize } = request.body || {};
+    const effectiveInput = input || formData;
+
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!id || !UUID_REGEX.test(id)) {
+      return reply.status(404).send({ error: 'Invalid workflow run identifier' });
+    }
 
     const existing = await workflowRunner.getWorkflowRun(id);
     if (!existing) {
@@ -324,7 +330,7 @@ export async function buildApp() {
     try {
       const summary = await workflowRunner.resumeWorkflow({
         workflowRunId: id,
-        input,
+        input: effectiveInput,
         authorize,
       });
       return summary;
@@ -916,6 +922,16 @@ export async function buildApp() {
     return { count: transitions.length, transitions };
   });
 
+  // 3b. Reset Citizen State Transitions (for testing / clean verification)
+  server.post('/api/citizen/transitions/reset', async (request) => {
+    const authCitizenId = getAuthenticatedCitizenId(request);
+    const db = await getDb();
+    await db
+      .delete(schema.citizenStateTransitions)
+      .where(eq(schema.citizenStateTransitions.citizenId, authCitizenId));
+    return { success: true, message: 'Citizen state transitions reset.' };
+  });
+
   // 4. Authorize Transition Plan
   server.post<{
     Params: { id: string };
@@ -929,7 +945,8 @@ export async function buildApp() {
       const updated = await transitionExecutor.authorizeTransition(id, authCitizenId, token);
       return { success: true, transition: updated };
     } catch (err: any) {
-      return reply.status(400).send({ error: err?.message || 'Failed to authorize transition' });
+      const statusCode = err?.message?.includes('not found') ? 404 : 400;
+      return reply.status(statusCode).send({ error: err?.message || 'Failed to authorize transition' });
     }
   });
 
@@ -942,7 +959,8 @@ export async function buildApp() {
       const updated = await transitionExecutor.executeTransitionLoop(id, authCitizenId);
       return { success: true, transition: updated };
     } catch (err: any) {
-      return reply.status(400).send({ error: err?.message || 'Failed to execute transition loop' });
+      const statusCode = err?.statusCode || (err?.message?.includes('not found') ? 404 : 400);
+      return reply.status(statusCode).send({ error: err?.message || 'Failed to execute transition loop' });
     }
   });
 
@@ -955,7 +973,8 @@ export async function buildApp() {
       const updated = await transitionExecutor.resumeTransition(id, authCitizenId);
       return { success: true, transition: updated };
     } catch (err: any) {
-      return reply.status(400).send({ error: err?.message || 'Failed to resume transition' });
+      const statusCode = err?.statusCode || (err?.message?.includes('not found') ? 404 : 400);
+      return reply.status(statusCode).send({ error: err?.message || 'Failed to resume transition' });
     }
   });
 

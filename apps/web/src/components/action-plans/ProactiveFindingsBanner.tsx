@@ -6,8 +6,17 @@ import {
   scanProactiveFindings,
 } from '../../api.js';
 import type { ProactiveFinding } from '@indra/contracts';
-import { ShieldCheckIcon, AlertCircleIcon, ArrowRightIcon, CloseIcon } from '../icons.js';
-import { formatHumanLabel } from '../../utils/civicFormatters.js';
+import {
+  ShieldCheckIcon,
+  AlertCircleIcon,
+  ArrowRightIcon,
+  CloseIcon,
+  ChevronDownIcon,
+  ClockIcon,
+  RefreshIcon,
+  InfoIcon,
+} from '../icons.js';
+import { formatHumanLabel, formatPlanTitle } from '../../utils/civicFormatters.js';
 
 
 interface ProactiveFindingsBannerProps {
@@ -86,41 +95,46 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
   if (findings.length === 0) return null;
 
   return (
-    <div className="mb-6 space-y-3 bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 shadow-xs">
-      {/* Header with Scan Trigger */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#E2E8F0]">
-        <div className="flex items-center gap-2.5">
-          <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <h3 className="text-sm font-bold uppercase tracking-wider text-[#0F172A]">
-            Proactive Institutional Intelligence
-          </h3>
-          <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-bold border border-amber-200">
-            {findings.length} Actionable
-          </span>
+    <section className="mb-8 space-y-4">
+      {/* 1. Section Header & Scan Trigger */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center space-x-3">
+          <div className="relative flex items-center justify-center">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping absolute opacity-75"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
+          </div>
+          <div className="flex items-center space-x-2.5">
+            <h2 className="text-sm font-bold tracking-wider uppercase text-slate-700">
+              Active Civic Notices & Alerts
+            </h2>
+            <span className="px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 font-extrabold text-xs">
+              {findings.length} Need Attention
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center space-x-3">
+          <span className="text-xs text-slate-400 font-medium hidden md:inline">
+            Continuously validated across official registries
+          </span>
           <button
             onClick={handleScan}
             disabled={loading}
-            className="text-xs px-3 py-1.5 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#CBD5E1] text-[#334155] font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-            title="Scan current public world model"
+            className="text-xs px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold transition-all flex items-center space-x-1.5 cursor-pointer shadow-2xs active:scale-98"
+            title="Scan official records for new updates"
           >
-            <span>↻</span>
-            <span>{loading ? 'Scanning...' : 'Scan World State'}</span>
+            <RefreshIcon className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+            <span>{loading ? 'Checking Records...' : 'Check for Updates'}</span>
           </button>
-          <span className="text-xs text-[#94A3B8] hidden md:inline">
-            Non-mutating continuous statutory observation
-          </span>
         </div>
       </div>
 
-      {/* Category Tabs */}
+      {/* 2. Category Filter Chips */}
       {findings.length > 1 && (
-        <div className="flex gap-1.5 overflow-x-auto pb-1 text-xs">
-          {['ALL', 'OBLIGATION_DEADLINE', 'CREDENTIAL_LIFECYCLE', 'DORMANT_ASSET', 'ANOMALY_CONTRADICTION', 'ELIGIBILITY_OPPORTUNITY'].map(
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 text-xs">
+          {['ALL', 'ANOMALY_CONTRADICTION', 'CREDENTIAL_LIFECYCLE', 'OBLIGATION_DEADLINE', 'DORMANT_ASSET', 'ELIGIBILITY_OPPORTUNITY'].map(
             (cat) => {
-              const label = cat === 'ALL' ? 'All Alerts' : formatHumanLabel(cat);
+              const label = cat === 'ALL' ? 'All Notices' : formatHumanLabel(cat);
               const count =
                 cat === 'ALL'
                   ? findings.length
@@ -133,11 +147,14 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
                   onClick={() => setActiveCategory(cat)}
                   className={`px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all font-semibold text-xs cursor-pointer ${
                     activeCategory === cat
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'bg-[#F8FAFC] text-[#64748B] hover:text-[#0F172A] border border-[#CBD5E1]'
+                      ? 'bg-[#0F172A] text-white shadow-xs'
+                      : 'bg-white text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 border border-slate-200'
                   }`}
                 >
-                  {label} ({count})
+                  {label}{' '}
+                  <span className={`ml-1 text-[11px] ${activeCategory === cat ? 'text-slate-300' : 'text-slate-400'}`}>
+                    ({count})
+                  </span>
                 </button>
               );
             }
@@ -145,8 +162,16 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
         </div>
       )}
 
-      {/* Finding Cards Grid - items-start ensures cards don't stretch adjacent cards vertically */}
-      <div className={`grid items-start grid-cols-1 md:grid-cols-2 ${filteredFindings.length >= 4 ? 'xl:grid-cols-4' : filteredFindings.length === 3 ? 'xl:grid-cols-3' : 'xl:grid-cols-2'} gap-4`}>
+      {/* 3. Cards Grid - Clean, spacious 2-column or 3-column executive layout */}
+      <div
+        className={`grid items-stretch gap-5 ${
+          filteredFindings.length === 1
+            ? 'grid-cols-1'
+            : filteredFindings.length === 3
+            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+            : 'grid-cols-1 md:grid-cols-2'
+        }`}
+      >
         {filteredFindings.map((finding) => {
           const isCritical = finding.urgency === 'CRITICAL';
           const isHigh = finding.urgency === 'HIGH';
@@ -163,128 +188,198 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
           return (
             <div
               key={finding.id}
-              className={`rounded-2xl p-5 border transition-all shadow-xs relative flex flex-col justify-between ${
+              className={`group rounded-2xl bg-white border transition-all duration-200 shadow-2xs hover:shadow-md flex flex-col justify-between overflow-hidden relative ${
                 isCritical
-                  ? 'bg-[#FFF1F2] border-[#FECDD3] text-[#9F1239]'
+                  ? 'border-slate-200 hover:border-rose-300'
                   : isHigh
-                  ? 'bg-[#FFFBEB] border-[#FDE68A] text-[#92400E]'
-                  : 'bg-[#F8FAFC] border-[#CBD5E1] text-[#1E293B]'
+                  ? 'border-slate-200 hover:border-amber-300'
+                  : 'border-slate-200 hover:border-slate-300'
               }`}
             >
-              <div>
-                {/* Card top badges */}
-                <div className="flex items-center justify-between mb-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wider ${
-                        isCritical
-                          ? 'bg-rose-600 text-white'
-                          : isHigh
-                          ? 'bg-amber-500 text-white'
-                          : 'bg-indigo-600 text-white'
-                      }`}
-                    >
-                      {finding.urgency}
-                    </span>
-                    <span className="text-xs px-2.5 py-1 rounded bg-white text-[#64748B] border border-[#CBD5E1] font-semibold">
-                      Priority: {finding.priorityScore || 50}/100
-                    </span>
-                  </div>
+              {/* Urgency Accent Bar */}
+              <div
+                className={`h-1 w-full ${
+                  isCritical
+                    ? 'bg-rose-500'
+                    : isHigh
+                    ? 'bg-amber-500'
+                    : 'bg-blue-500'
+                }`}
+              />
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleSnooze(finding.id, 7)}
-                      className="text-[#64748B] hover:text-[#0F172A] text-xs px-2 py-0.5 rounded bg-white hover:bg-[#F1F5F9] border border-[#E2E8F0] transition-colors cursor-pointer"
-                      title="Snooze for 7 days"
-                    >
-                      Snooze 7d
-                    </button>
-                    <button
-                      onClick={() => handleDismiss(finding.id)}
-                      className="text-[#64748B] hover:text-rose-600 text-xs px-2 py-0.5 rounded bg-white hover:bg-[#F1F5F9] border border-[#E2E8F0] transition-colors cursor-pointer"
-                      title="Dismiss notification"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
+              <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Card Header: Urgency Badge + Category + Quick Actions */}
+                  <div className="flex items-center justify-between gap-2 mb-3.5">
+                    <div className="flex items-center flex-wrap gap-2">
+                      {isCritical ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200/80">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                          Urgent Notice
+                        </span>
+                      ) : isHigh ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200/80">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                          Action Required
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/80">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                          Notice
+                        </span>
+                      )}
 
-                <h4 className="font-bold text-base text-[#0F172A] mb-1.5">{finding.title}</h4>
-                <p className="text-sm text-[#475569] mb-3 leading-relaxed">{finding.explanation}</p>
-
-                {/* 5-Part Explanation Section */}
-                {finding.structuredExplanation && (
-                  <div className="mb-3 space-y-2">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => setExpandedId(isExpanded ? null : finding.id)}
-                        className="text-xs font-semibold text-[#2563EB] hover:underline flex items-center gap-1 transition-colors cursor-pointer"
-                      >
-                        <span>{isExpanded ? '▾ Hide Statutory Breakdown' : '▸ View Statutory Rationale'}</span>
-                      </button>
-
-                      <button
-                        onClick={() => setActiveRationaleFinding(finding)}
-                        className="text-xs font-semibold text-[#64748B] hover:text-[#0F172A] hover:underline transition-colors cursor-pointer"
-                      >
-                        Inspect Details ↗
-                      </button>
+                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200/60">
+                        {formatHumanLabel(finding.category)}
+                      </span>
                     </div>
 
-                    {isExpanded && (
-                      <div className="p-3.5 rounded-xl bg-white border border-[#CBD5E1] text-xs space-y-2.5 text-[#334155] animate-fadeIn">
-                        <div>
-                          <span className="font-bold text-[#64748B] uppercase text-xs block">1. What Changed:</span>
-                          <p className="text-sm text-[#0F172A] mt-0.5">{finding.structuredExplanation.whatChanged}</p>
-                        </div>
-                        <div>
-                          <span className="font-bold text-amber-700 uppercase text-xs block">2. Why It Matters:</span>
-                          <p className="text-sm text-[#0F172A] mt-0.5">{finding.structuredExplanation.whyItMatters}</p>
-                        </div>
-                        <div>
-                          <span className="font-bold text-indigo-700 uppercase text-xs block">3. What INDRA Recommends:</span>
-                          <p className="text-sm text-[#0F172A] mt-0.5">{finding.structuredExplanation.whatIndraRecommends}</p>
-                        </div>
-                        <div>
-                          <span className="font-bold text-emerald-700 uppercase text-xs block">4. What You Must Authorize:</span>
-                          <p className="text-sm text-[#0F172A] mt-0.5">{finding.structuredExplanation.whatCitizenMustAuthorize}</p>
-                        </div>
-                        <div>
-                          <span className="font-bold text-cyan-700 uppercase text-xs block">5. What Happens Next:</span>
-                          <p className="text-sm text-[#0F172A] mt-0.5">{finding.structuredExplanation.whatHappensNext}</p>
-                        </div>
+                    {/* Subtle Quick Actions (Snooze + Dismiss) */}
+                    <div className="flex items-center space-x-1 opacity-75 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleSnooze(finding.id, 7)}
+                        className="text-[11px] font-medium text-slate-400 hover:text-slate-700 hover:bg-slate-100 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                        title="Snooze reminder for 7 days"
+                      >
+                        Snooze 7d
+                      </button>
+                      <button
+                        onClick={() => handleDismiss(finding.id)}
+                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded-lg transition-colors cursor-pointer"
+                        title="Dismiss notice"
+                      >
+                        <CloseIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Finding Title */}
+                  <h3 className="font-bold text-base sm:text-lg text-slate-900 tracking-tight leading-snug mb-2">
+                    {formatPlanTitle(finding.title)}
+                  </h3>
+
+                  {/* Finding Body Explanation */}
+                  <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                    {finding.explanation}
+                  </p>
+
+                  {/* Statutory Deadline if provided */}
+                  {((finding.provenanceData?.deadline as string) || (finding.actionPayload?.deadline as string)) && (
+                    <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 font-semibold">
+                      <ClockIcon className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                      <span>
+                        Statutory Deadline:{' '}
+                        <strong className="font-bold text-amber-950">
+                          {(finding.provenanceData?.deadline as string) || (finding.actionPayload?.deadline as string)}
+                        </strong>
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Statutory Assessment Accordion Trigger */}
+                  {finding.structuredExplanation && (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : finding.id)}
+                          className="inline-flex items-center gap-1.5 font-semibold text-slate-700 hover:text-slate-900 transition-colors cursor-pointer group/exp"
+                        >
+                          <InfoIcon className="w-3.5 h-3.5 text-slate-500 group-hover/exp:text-slate-800" />
+                          <span>{isExpanded ? 'Hide Statutory Assessment' : 'Why did INDRA flag this?'}</span>
+                          <ChevronDownIcon
+                            className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                              isExpanded ? 'rotate-180' : ''
+                            }`}
+                          />
+                        </button>
+
+                        <button
+                          onClick={() => setActiveRationaleFinding(finding)}
+                          className="font-medium text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          <span>Legal Basis</span>
+                          <span className="text-[10px]">↗</span>
+                        </button>
                       </div>
+
+                      {isExpanded && (
+                        <div className="mt-3 p-4 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-3 animate-fadeIn">
+                          <div className="border-l-2 border-slate-300 pl-3">
+                            <span className="font-bold uppercase tracking-wider text-[10px] text-slate-500 block">
+                              1. What Was Detected
+                            </span>
+                            <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
+                              {finding.structuredExplanation.whatChanged}
+                            </p>
+                          </div>
+                          <div className="border-l-2 border-amber-400 pl-3">
+                            <span className="font-bold uppercase tracking-wider text-[10px] text-amber-800 block">
+                              2. Statutory Impact & Law
+                            </span>
+                            <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
+                              {finding.structuredExplanation.whyItMatters}
+                            </p>
+                          </div>
+                          <div className="border-l-2 border-indigo-400 pl-3">
+                            <span className="font-bold uppercase tracking-wider text-[10px] text-indigo-800 block">
+                              3. INDRA Recommendation
+                            </span>
+                            <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
+                              {finding.structuredExplanation.whatIndraRecommends}
+                            </p>
+                          </div>
+                          <div className="border-l-2 border-emerald-400 pl-3">
+                            <span className="font-bold uppercase tracking-wider text-[10px] text-emerald-800 block">
+                              4. What You Authorize
+                            </span>
+                            <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
+                              {finding.structuredExplanation.whatCitizenMustAuthorize}
+                            </p>
+                          </div>
+                          <div className="border-l-2 border-cyan-400 pl-3">
+                            <span className="font-bold uppercase tracking-wider text-[10px] text-cyan-800 block">
+                              5. Post-Resolution Outcome
+                            </span>
+                            <p className="text-slate-900 text-xs mt-0.5 leading-relaxed">
+                              {finding.structuredExplanation.whatHappensNext}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Footer: Next Step Prompt + Action Button */}
+                <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2">
+                  <div className="text-xs text-slate-500 flex items-center gap-2 min-w-0 pr-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                    <span className="truncate">
+                      {finding.actionableRecommendation || 'Follow guided steps to resolve'}
+                    </span>
+                  </div>
+
+                  <div className="shrink-0 flex items-center justify-end">
+                    {actionPlanTarget && onSelectActionPlan && (
+                      <button
+                        onClick={() => onSelectActionPlan(actionPlanTarget)}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold bg-[#0F172A] hover:bg-slate-800 active:bg-black text-white transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Resolve in Action Plan</span>
+                        <ArrowRightIcon className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {workflowTarget && onSelectWorkflow && !actionPlanTarget && (
+                      <button
+                        onClick={() => onSelectWorkflow(workflowTarget)}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold bg-[#0F172A] hover:bg-slate-800 active:bg-black text-white transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Start Guided Resolution</span>
+                        <ArrowRightIcon className="w-3.5 h-3.5" />
+                      </button>
                     )}
                   </div>
-                )}
-              </div>
-
-              {/* Action Link Footer */}
-              <div className="pt-3 border-t border-[#E2E8F0] flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-[#64748B] truncate max-w-[55%]">
-                  {finding.actionableRecommendation}
-                </span>
-
-                <div className="flex items-center gap-2">
-                  {actionPlanTarget && onSelectActionPlan && (
-                    <button
-                      onClick={() => onSelectActionPlan(actionPlanTarget)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>Open Action Plan</span>
-                      <ArrowRightIcon className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-
-                  {workflowTarget && onSelectWorkflow && !actionPlanTarget && (
-                    <button
-                      onClick={() => onSelectWorkflow(workflowTarget)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>Start Action</span>
-                      <ArrowRightIcon className="w-3.5 h-3.5" />
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
@@ -292,14 +387,14 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
         })}
       </div>
 
-      {/* STATUTORY RATIONALE & POLICY PROVENANCE MODAL */}
+      {/* 4. STATUTORY RATIONALE & POLICY PROVENANCE MODAL */}
       {activeRationaleFinding && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#CBD5E1] rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-fadeIn max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-fadeIn max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-[#E2E8F0] pb-4">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
-                <div className="flex items-center gap-2 mb-1.5">
+                <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
                     {formatHumanLabel(activeRationaleFinding.category)}
                   </span>
@@ -307,13 +402,13 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
                     {formatHumanLabel(activeRationaleFinding.ruleCode)}
                   </span>
                 </div>
-                <h3 className="text-xl font-extrabold text-[#0F172A]">
+                <h3 className="text-xl font-extrabold text-slate-900">
                   {activeRationaleFinding.title}
                 </h3>
               </div>
               <button
                 onClick={() => setActiveRationaleFinding(null)}
-                className="text-[#64748B] hover:text-[#0F172A] p-2 rounded-xl hover:bg-[#F1F5F9] cursor-pointer"
+                className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 cursor-pointer transition-colors"
                 title="Close"
               >
                 <CloseIcon className="w-5 h-5" />
@@ -321,43 +416,63 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
             </div>
 
             {/* Statutory Ground Truth & Explanation */}
-            <div className="space-y-4 text-sm text-[#334155]">
-              <div className="p-3.5 bg-[#F8FAFC] rounded-xl border border-[#CBD5E1]">
-                <span className="font-bold text-[#64748B] uppercase text-xs block mb-1">Continuous Ground Truth Observation:</span>
-                <p className="text-[#0F172A] leading-relaxed">{activeRationaleFinding.explanation}</p>
+            <div className="space-y-4 text-sm text-slate-600">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="font-bold text-slate-500 uppercase text-xs block mb-1">
+                  Continuous Ground Truth Observation:
+                </span>
+                <p className="text-slate-900 leading-relaxed">{activeRationaleFinding.explanation}</p>
               </div>
 
               {activeRationaleFinding.structuredExplanation && (
                 <div className="space-y-3">
-                  <div className="p-3.5 rounded-xl bg-white border border-[#CBD5E1]">
-                    <span className="font-bold text-[#64748B] uppercase text-xs block">1. What Changed</span>
-                    <p className="text-[#0F172A] mt-1 leading-relaxed">{activeRationaleFinding.structuredExplanation.whatChanged}</p>
+                  <div className="p-4 rounded-xl bg-white border border-slate-200">
+                    <span className="font-bold text-slate-500 uppercase text-xs block">1. What Changed</span>
+                    <p className="text-slate-900 mt-1 leading-relaxed">
+                      {activeRationaleFinding.structuredExplanation.whatChanged}
+                    </p>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200">
-                    <span className="font-bold text-amber-800 uppercase text-xs block">2. Why It Matters (Statutory Impact)</span>
-                    <p className="text-[#0F172A] mt-1 leading-relaxed">{activeRationaleFinding.structuredExplanation.whyItMatters}</p>
+                  <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200">
+                    <span className="font-bold text-amber-800 uppercase text-xs block">
+                      2. Why It Matters (Statutory Impact)
+                    </span>
+                    <p className="text-slate-900 mt-1 leading-relaxed">
+                      {activeRationaleFinding.structuredExplanation.whyItMatters}
+                    </p>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-indigo-50/60 border border-indigo-200">
-                    <span className="font-bold text-indigo-800 uppercase text-xs block">3. What INDRA Recommends</span>
-                    <p className="text-[#0F172A] mt-1 leading-relaxed">{activeRationaleFinding.structuredExplanation.whatIndraRecommends}</p>
+                  <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-200">
+                    <span className="font-bold text-indigo-800 uppercase text-xs block">
+                      3. What INDRA Recommends
+                    </span>
+                    <p className="text-slate-900 mt-1 leading-relaxed">
+                      {activeRationaleFinding.structuredExplanation.whatIndraRecommends}
+                    </p>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200">
-                    <span className="font-bold text-emerald-800 uppercase text-xs block">4. What You Must Authorize</span>
-                    <p className="text-[#0F172A] mt-1 leading-relaxed">{activeRationaleFinding.structuredExplanation.whatCitizenMustAuthorize}</p>
+                  <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200">
+                    <span className="font-bold text-emerald-800 uppercase text-xs block">
+                      4. What You Must Authorize
+                    </span>
+                    <p className="text-slate-900 mt-1 leading-relaxed">
+                      {activeRationaleFinding.structuredExplanation.whatCitizenMustAuthorize}
+                    </p>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-cyan-50/60 border border-cyan-200">
-                    <span className="font-bold text-cyan-800 uppercase text-xs block">5. What Happens Next</span>
-                    <p className="text-[#0F172A] mt-1 leading-relaxed">{activeRationaleFinding.structuredExplanation.whatHappensNext}</p>
+                  <div className="p-4 rounded-xl bg-cyan-50/50 border border-cyan-200">
+                    <span className="font-bold text-cyan-800 uppercase text-xs block">
+                      5. What Happens Next
+                    </span>
+                    <p className="text-slate-900 mt-1 leading-relaxed">
+                      {activeRationaleFinding.structuredExplanation.whatHappensNext}
+                    </p>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Modal Actions */}
-            <div className="pt-3 border-t border-[#E2E8F0] flex items-center justify-between">
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
               <button
                 onClick={() => setActiveRationaleFinding(null)}
-                className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#334155] transition cursor-pointer"
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
               >
                 Close
               </button>
@@ -370,9 +485,9 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
                       setActiveRationaleFinding(null);
                       onSelectActionPlan(code);
                     }}
-                    className="px-6 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl text-sm font-bold bg-[#0F172A] hover:bg-slate-800 text-white transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
-                    <span>Open Action Plan</span>
+                    <span>Resolve in Action Plan</span>
                     <ArrowRightIcon className="w-4 h-4" />
                   </button>
                 )}
@@ -384,9 +499,9 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
                       setActiveRationaleFinding(null);
                       onSelectWorkflow(code);
                     }}
-                    className="px-6 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl text-sm font-bold bg-[#0F172A] hover:bg-slate-800 text-white transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
-                    <span>Start Action</span>
+                    <span>Start Guided Resolution</span>
                     <ArrowRightIcon className="w-4 h-4" />
                   </button>
                 )}
@@ -395,6 +510,6 @@ export const ProactiveFindingsBanner: React.FC<ProactiveFindingsBannerProps> = (
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 };

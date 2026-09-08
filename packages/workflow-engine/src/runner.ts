@@ -280,7 +280,7 @@ export class WorkflowRunner {
       }
 
       const missingFields = uiContract.requiredFields.filter(
-        (f) => f.required && currentContext[f.fieldId] === undefined
+        (f) => f.required && (currentContext[f.fieldId] === undefined || currentContext[f.fieldId] === '')
       );
 
       if (missingFields.length > 0) {

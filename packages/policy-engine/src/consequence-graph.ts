@@ -25,18 +25,18 @@ export interface ConsequenceGraphDefinition {
 
 export const RELOCATION_GRAPH: ConsequenceGraphDefinition = {
   lifeEventCode: 'RELOCATION',
-  title: 'Inter-Jurisdictional Relocation Cascade',
+  title: 'Moving to Another City (Address & Records)',
   summaryTemplate: (wm, ctx) =>
-    `Comprehensive statutory relocation cascade from ${wm.profile.currentCity || 'origin'} to ${
-      ctx.destinationCity || 'Pune'
-    }, ${ctx.destinationState || 'Maharashtra'}.`,
+    `Update your official records in the right order: change your residential address on Aadhaar, transfer your vehicle registration (RTO), and update your voter ID. Moving from ${
+      wm.profile.currentCity || 'origin'
+    } to ${ctx.destinationCity || 'Pune'}, ${ctx.destinationState || 'Maharashtra'}.`,
   estimatedDays: 14,
   stepTemplates: [
     // Phase 1: Identity Foundation (UIDAI)
     {
       stepKey: 'update_aadhaar_address',
       capabilityId: 'identity.update_aadhaar_address',
-      title: 'Update Aadhaar Residential Address',
+      title: 'Update Address on Aadhaar',
       authority: 'Unique Identification Authority of India (UIDAI)',
       phaseIndex: 1,
       dependencies: [],
@@ -56,7 +56,7 @@ export const RELOCATION_GRAPH: ConsequenceGraphDefinition = {
     {
       stepKey: 'transfer_voter_constituency',
       capabilityId: 'identity.transfer_voter_constituency',
-      title: 'Transfer Voter Assembly Constituency (Form 8)',
+      title: 'Update Voting Address (Voter ID Form 8)',
       authority: 'Election Commission of India (ECI)',
       phaseIndex: 2,
       dependencies: ['update_aadhaar_address'],
@@ -76,7 +76,7 @@ export const RELOCATION_GRAPH: ConsequenceGraphDefinition = {
     {
       stepKey: 'endorse_dl_address',
       capabilityId: 'transport.endorse_dl_address',
-      title: 'Endorse Driving Licence Residential Address',
+      title: 'Update Address on Driving Licence',
       authority: 'MoRTH Sarathi Portal',
       phaseIndex: 2,
       dependencies: ['update_aadhaar_address'],
@@ -95,7 +95,7 @@ export const RELOCATION_GRAPH: ConsequenceGraphDefinition = {
     {
       stepKey: 'transfer_vehicle_rc',
       capabilityId: 'transport.transfer_vehicle_rc',
-      title: 'Transfer Motor Vehicle Registration Jurisdiction',
+      title: 'Transfer Vehicle to New State (RTO NOC Form 28)',
       authority: 'Ministry of Road Transport and Highways (MoRTH Vahan)',
       phaseIndex: 2,
       dependencies: ['update_aadhaar_address'],
@@ -115,7 +115,7 @@ export const RELOCATION_GRAPH: ConsequenceGraphDefinition = {
     {
       stepKey: 'issue_residence_vc',
       capabilityId: 'documents.issue_credential',
-      title: 'Issue Cryptographic Verifiable Residence Credential',
+      title: 'Get Digital Address Certificate',
       authority: 'INDRA Sovereign Digital Credentials Exchange',
       phaseIndex: 3,
       dependencies: ['update_aadhaar_address'],
@@ -144,15 +144,15 @@ export const RELOCATION_GRAPH: ConsequenceGraphDefinition = {
 
 export const NEW_EMPLOYMENT_GRAPH: ConsequenceGraphDefinition = {
   lifeEventCode: 'NEW_EMPLOYMENT',
-  title: 'Employment Transition & Statutory Benefits Consolidation',
+  title: 'Switching Jobs (Transfer PF & Tax)',
   summaryTemplate: (wm, ctx) =>
-    `Statutory employment onboarding and benefits consolidation for ${ctx.employerName || 'new enterprise'}.`,
+    `Move your Provident Fund (PF) balance from your old employer to your new job, and link your PAN card so extra tax is not deducted on transfers or withdrawals. Onboarding for ${ctx.employerName || 'new job'}.`,
   estimatedDays: 7,
   stepTemplates: [
     {
       stepKey: 'inquire_epfo_accounts',
       capabilityId: 'epfo.inquire_accounts',
-      title: 'Inquire Universal Account Number (UAN) Member Ledgers',
+      title: 'Check Your PF Accounts (EPFO)',
       authority: "Employees' Provident Fund Organisation (EPFO)",
       phaseIndex: 1,
       dependencies: [],
@@ -167,7 +167,7 @@ export const NEW_EMPLOYMENT_GRAPH: ConsequenceGraphDefinition = {
     {
       stepKey: 'update_epfo_pan',
       capabilityId: 'epfo.update_kyc_pan',
-      title: 'Seed Verified Income Tax PAN on UAN Profile',
+      title: 'Link PAN Card to PF Account',
       authority: "Employees' Provident Fund Organisation (EPFO)",
       phaseIndex: 1,
       dependencies: [],
@@ -186,7 +186,7 @@ export const NEW_EMPLOYMENT_GRAPH: ConsequenceGraphDefinition = {
     {
       stepKey: 'consolidate_dormant_pf',
       capabilityId: 'epfo.transfer_claim',
-      title: 'Consolidate Inactive Provident Fund Balances',
+      title: 'Transfer Old PF Balance to New Job (Form 13)',
       authority: "Employees' Provident Fund Organisation (EPFO)",
       phaseIndex: 2,
       dependencies: ['inquire_epfo_accounts', 'update_epfo_pan'],
@@ -203,7 +203,7 @@ export const NEW_EMPLOYMENT_GRAPH: ConsequenceGraphDefinition = {
     {
       stepKey: 'fetch_form26as_tds',
       capabilityId: 'tax.fetch_form26as',
-      title: 'Reconcile Multi-Employer Tax Credits (TRACES Form 26AS)',
+      title: 'Check Tax Deductions (Form 26AS)',
       authority: 'Income Tax Department (TRACES)',
       phaseIndex: 2,
       dependencies: ['update_epfo_pan'],
@@ -221,15 +221,15 @@ export const NEW_EMPLOYMENT_GRAPH: ConsequenceGraphDefinition = {
 
 export const START_BUSINESS_GRAPH: ConsequenceGraphDefinition = {
   lifeEventCode: 'START_BUSINESS',
-  title: 'Enterprise Incorporation & Statutory Tax Registration Cascade',
+  title: 'Starting a Company (MCA, PAN & GST)',
   summaryTemplate: (wm, ctx) =>
-    `End-to-end statutory business registration for '${ctx.companyName || 'New Venture'}' across MCA, GSTN, and MSME.`,
+    `Complete all government filings to register '${ctx.companyName || 'New Company'}': reserve company name, get certificate of incorporation, PAN card, and GST registration.`,
   estimatedDays: 10,
   stepTemplates: [
     {
       stepKey: 'reserve_company_name',
       capabilityId: 'business.reserve_name',
-      title: 'Reserve Enterprise Legal Name (MCA RUN)',
+      title: 'Reserve Company Name (MCA RUN)',
       authority: 'Ministry of Corporate Affairs (MCA)',
       phaseIndex: 1,
       dependencies: [],
@@ -246,7 +246,7 @@ export const START_BUSINESS_GRAPH: ConsequenceGraphDefinition = {
     {
       stepKey: 'incorporate_company',
       capabilityId: 'business.incorporate',
-      title: 'Incorporate Enterprise & Issue Legal PAN (SPICe+)',
+      title: 'Register Company & Get Company PAN (SPICe+)',
       authority: 'Ministry of Corporate Affairs / Registrar of Companies',
       phaseIndex: 2,
       dependencies: ['reserve_company_name'],
@@ -270,7 +270,7 @@ export const START_BUSINESS_GRAPH: ConsequenceGraphDefinition = {
     {
       stepKey: 'register_gstin',
       capabilityId: 'business.register_gstin',
-      title: 'Register Goods & Services Tax Identification Number (GSTIN)',
+      title: 'Apply for GST Number (GSTIN)',
       authority: 'Goods and Services Tax Network (GSTN)',
       phaseIndex: 3,
       dependencies: ['incorporate_company'],
@@ -287,7 +287,7 @@ export const START_BUSINESS_GRAPH: ConsequenceGraphDefinition = {
     {
       stepKey: 'register_udyam',
       capabilityId: 'business.register_udyam',
-      title: 'Register MSME Udyam Sovereign Certificate',
+      title: 'Get MSME Udyam Certificate',
       authority: 'Ministry of Micro, Small and Medium Enterprises',
       phaseIndex: 3,
       dependencies: ['incorporate_company'],

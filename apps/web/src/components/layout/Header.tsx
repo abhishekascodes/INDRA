@@ -65,93 +65,85 @@ export function Header({
 
   return (
     <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-50 shadow-2xs">
-      {/* 1. SYNTHETIC ENVIRONMENT DISCLOSURE MICRO-BANNER */}
-      <div className="bg-[#F8FAFC] border-b border-[#E2E8F0] px-4 py-1.5 text-center text-xs font-medium text-[#64748B] flex items-center justify-center space-x-2">
-        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-        <span className="font-semibold text-[#0F172A]">Synthetic Public Infrastructure Environment</span>
-        <span>·</span>
-        <span>Demonstration Data</span>
-        <span className="hidden sm:inline text-gray-300">|</span>
-        <span className="hidden sm:inline text-xs text-[#94A3B8]">
-          Simulated UIDAI, Income Tax, EPFO, MCA & CEIR registries
-        </span>
-      </div>
-
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 h-18 flex items-center justify-between">
-        {/* 2. LOGO & CIVIC TAGLINE */}
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 h-16 flex items-center justify-between gap-4">
+        {/* 1. BRAND LOGO & SYSTEM TAG */}
         <div 
           onClick={() => onSelectTab('home')}
-          className="flex items-center space-x-3 cursor-pointer select-none"
+          className="flex items-center space-x-3 cursor-pointer select-none shrink-0 group"
         >
-          <IndraEmblemIcon className="w-9 h-9 shrink-0 shadow-xs" />
-          <div className="flex items-baseline space-x-2">
-            <span className="font-serif text-xl font-extrabold text-[#0F172A] tracking-tight">INDRA</span>
-            <span className="text-xs text-[#64748B] hidden sm:inline font-medium">Citizen Operating System</span>
+          <div className="w-9 h-9 rounded-xl bg-[#0F172A] text-white flex items-center justify-center p-1.5 shadow-xs group-hover:bg-slate-800 transition-colors">
+            <IndraEmblemIcon className="w-5.5 h-5.5 shrink-0 text-white" />
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="font-sans font-black text-xl tracking-tight text-[#0F172A]">INDRA</span>
+            <span className="px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[10px] font-extrabold tracking-wider uppercase text-slate-600">
+              CIVIC OS
+            </span>
           </div>
         </div>
 
-        {/* 3. CENTER NAVIGATION TABS */}
-        <nav className="flex items-center space-x-1.5 text-sm font-semibold">
+        {/* 2. CENTER NAVIGATION TABS (Sleek, compact, zero wrapping) */}
+        <nav className="flex items-center space-x-1 text-xs sm:text-sm font-semibold overflow-x-auto no-scrollbar py-1">
           <button
             onClick={() => onSelectTab('home')}
-            className={`px-4 py-2 rounded-xl flex items-center space-x-2 transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'home'
-                ? 'text-[#0F172A] bg-[#F1F5F9] font-bold shadow-2xs'
-                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-gray-50'
+                ? 'text-[#0F172A] bg-slate-100 font-extrabold shadow-2xs'
+                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50'
             }`}
           >
-            <HomeIcon className="w-4 h-4" />
+            <HomeIcon className="w-4 h-4 shrink-0" />
             <span>Home</span>
           </button>
 
           <button
             onClick={() => onSelectTab('world-model')}
-            className={`px-4 py-2 rounded-xl flex items-center space-x-2 transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'world-model'
-                ? 'text-[#0F172A] bg-[#F1F5F9] font-bold shadow-2xs'
-                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-gray-50'
+                ? 'text-[#0F172A] bg-slate-100 font-extrabold shadow-2xs'
+                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50'
             }`}
           >
-            <ShieldCheckIcon className="w-4 h-4" />
-            <span>Public Record</span>
+            <ShieldCheckIcon className="w-4 h-4 shrink-0" />
+            <span>Records</span>
           </button>
 
           <button
             onClick={() => onSelectTab('action-plans')}
-            className={`px-4 py-2 rounded-xl flex items-center space-x-2 transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'action-plans'
-                ? 'text-[#0F172A] bg-[#F1F5F9] font-bold shadow-2xs'
-                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-gray-50'
+                ? 'text-[#0F172A] bg-slate-100 font-extrabold shadow-2xs'
+                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50'
             }`}
           >
-            <AlertCircleIcon className="w-4 h-4" />
+            <AlertCircleIcon className="w-4 h-4 shrink-0" />
             <span>Action Plans</span>
           </button>
 
           <button
             onClick={() => onSelectTab('transitions')}
-            className={`px-4 py-2 rounded-xl flex items-center space-x-2 transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'transitions'
-                ? 'text-[#0F172A] bg-[#F1F5F9] font-bold shadow-2xs'
-                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-gray-50'
+                ? 'text-[#0F172A] bg-slate-100 font-extrabold shadow-2xs'
+                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50'
             }`}
           >
-            <RefreshIcon className="w-4 h-4" />
-            <span>State Transitions</span>
+            <RefreshIcon className="w-4 h-4 shrink-0" />
+            <span>Activity</span>
           </button>
 
           <button
             onClick={() => onSelectTab('inbox')}
-            className={`px-4 py-2 rounded-xl flex items-center space-x-2 transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'inbox'
-                ? 'text-[#0F172A] bg-[#F1F5F9] font-bold shadow-2xs'
-                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-gray-50'
+                ? 'text-[#0F172A] bg-slate-100 font-extrabold shadow-2xs'
+                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50'
             }`}
           >
-            <InboxIcon className="w-4 h-4" />
+            <InboxIcon className="w-4 h-4 shrink-0" />
             <span>Inbox</span>
             {inboxUnreadCount > 0 && (
-              <span className="px-2 py-0.5 text-xs bg-amber-100 text-amber-900 rounded-full font-bold">
+              <span className="px-1.5 py-0.2 text-2xs bg-amber-100 text-amber-900 rounded-full font-bold">
                 {inboxUnreadCount}
               </span>
             )}
@@ -159,50 +151,53 @@ export function Header({
 
           <button
             onClick={() => onSelectTab('vault')}
-            className={`px-4 py-2 rounded-xl flex items-center space-x-2 transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'vault'
-                ? 'text-[#0F172A] bg-[#F1F5F9] font-bold shadow-2xs'
-                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-gray-50'
+                ? 'text-[#0F172A] bg-slate-100 font-extrabold shadow-2xs'
+                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50'
             }`}
           >
-            <LockIcon className="w-4 h-4" />
+            <LockIcon className="w-4 h-4 shrink-0" />
             <span>Vault</span>
           </button>
 
           <button
             onClick={() => onSelectTab('trust')}
-            className={`px-4 py-2 rounded-xl flex items-center space-x-2 transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer select-none whitespace-nowrap ${
               activeTab === 'trust'
-                ? 'text-[#0F172A] bg-[#F1F5F9] font-bold shadow-2xs'
-                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-gray-50'
+                ? 'text-[#0F172A] bg-slate-100 font-extrabold shadow-2xs'
+                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50'
             }`}
           >
-            <ShieldCheckIcon className="w-4 h-4" />
-            <span>Trust & Privacy</span>
+            <ShieldCheckIcon className="w-4 h-4 shrink-0" />
+            <span>Privacy</span>
           </button>
         </nav>
 
-        {/* 4. RIGHT CITIZEN IDENTITY PILL & CUSTOM PERSONA SWITCHER */}
-        <div ref={dropdownRef} className="relative">
+        {/* 3. RIGHT CITIZEN IDENTITY PILL & PROFILE SWITCHER */}
+        <div ref={dropdownRef} className="relative shrink-0">
           <button
             type="button"
             onClick={() => setIsDropdownOpen((prev) => !prev)}
-            className={`px-3 py-1.5 rounded-xl border transition flex items-center space-x-3 cursor-pointer select-none ${
+            className={`px-3 py-1.5 rounded-xl border transition flex items-center space-x-2.5 cursor-pointer select-none ${
               isDropdownOpen
                 ? 'bg-white border-[#0F172A] ring-2 ring-[#0F172A]/10 shadow-xs'
                 : 'bg-white hover:bg-[#F8FAFC] border-[#CBD5E1] hover:border-[#94A3B8] shadow-2xs'
             }`}
-            title="Switch Synthetic Citizen Persona"
+            title="Switch Profile"
           >
-            <CitizenAvatarIcon className="w-8 h-8 shrink-0" />
+            <div className="relative">
+              <CitizenAvatarIcon className="w-7 h-7 shrink-0" />
+              <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+            </div>
 
             <div className="text-left hidden sm:block">
-              <div className="text-sm font-bold text-[#0F172A] leading-tight">{citizenName}</div>
-              <div className="text-xs text-[#64748B] leading-tight">{citizenLocation}</div>
+              <div className="text-xs font-bold text-[#0F172A] leading-tight">{citizenName}</div>
+              <div className="text-[11px] text-[#64748B] leading-tight">{citizenLocation}</div>
             </div>
 
             <ChevronDownIcon
-              className={`w-4 h-4 text-[#64748B] transition-transform duration-200 shrink-0 ${
+              className={`w-3.5 h-3.5 text-[#64748B] transition-transform duration-200 shrink-0 ${
                 isDropdownOpen ? 'rotate-180 text-[#0F172A]' : ''
               }`}
             />
@@ -213,10 +208,10 @@ export function Header({
             <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white border border-[#CBD5E1] rounded-2xl shadow-xl z-50 p-2 animate-fadeIn">
               <div className="px-3 pt-2 pb-1.5 border-b border-[#F1F5F9]">
                 <div className="text-xs font-bold uppercase tracking-wider text-[#64748B]">
-                  Switch Evaluation Persona
+                  Switch Profile
                 </div>
                 <div className="text-xs text-[#94A3B8] mt-0.5">
-                  Select a synthetic citizen profile to inspect cross-domain public records and workflows.
+                  Select an active citizen profile to view personalized records and filings.
                 </div>
               </div>
 

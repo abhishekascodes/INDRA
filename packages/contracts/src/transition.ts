@@ -10,6 +10,7 @@ export type TransitionState =
   | 'SUSPENDED'
   | 'RETRYING'
   | 'RECONCILING'
+  | 'RECONCILIATION_DIVERGENT'
   | 'COMPLETED'
   | 'FAILED'
   | 'CANCELLED';

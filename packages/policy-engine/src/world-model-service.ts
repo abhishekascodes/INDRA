@@ -523,7 +523,7 @@ export class CitizenWorldModelService {
       case 'ABHA':
         return 'National Health Authority (NHA / Ayushman Bharat)';
       default:
-        return 'Government of India Statutory Registry';
+        return 'Official Public Registry';
     }
   }
 }

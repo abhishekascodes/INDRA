@@ -85,19 +85,19 @@ export function DemoSimulationControls({
           />
           <div>
             <div className="text-xs font-bold text-[#0F172A] flex items-center space-x-2">
-              <span>Synthetic Institution Environment:</span>
+              <span>Simulated Public Authority Environment:</span>
               {isSimulatingOutage ? (
                 <span className="px-2 py-0.5 rounded-full text-2xs font-bold bg-amber-100 text-amber-900">
-                  Bhoomi Node Simulated 503 Outage Active
+                  Bhoomi Simulated 503 Outage Active
                 </span>
               ) : (
                 <span className="px-2 py-0.5 rounded-full text-2xs font-bold bg-emerald-100 text-emerald-900">
-                  All Institutional Nodes Online
+                  All Institutional Services Online
                 </span>
               )}
             </div>
             <p className="text-2xs text-[#64748B]">
-              Inject deterministic failures to test forward recovery, checkpoint durability, and safe suspension.
+              Simulate real-world public infrastructure conditions: test temporary outages, durable pause without data loss, and discrepancy detection.
             </p>
           </div>
         </div>
@@ -131,7 +131,7 @@ export function DemoSimulationControls({
             <div className="p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-bold text-[#0F172A]">
-                  Bhoomi / Kaveri 503 Outage Mode
+                  Simulate Bhoomi 503 Service Outage
                 </span>
                 <button
                   type="button"
@@ -147,14 +147,14 @@ export function DemoSimulationControls({
                 </button>
               </div>
               <p className="text-2xs text-[#64748B]">
-                Forces Bhoomi Land Records node to return 503 Gateway Timeout during revenue mutation. Demonstrates safe forward suspension without rollback.
+                Forces Bhoomi Land Records to return a temporary 503 gateway pause during mutation. Demonstrates safe durable pause without rollback or data loss.
               </p>
             </div>
 
             <div className="p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-bold text-[#0F172A]">
-                  Deed Legal Name Contradiction
+                  Deed Legal Name Discrepancy
                 </span>
                 <button
                   type="button"
@@ -170,7 +170,7 @@ export function DemoSimulationControls({
                 </button>
               </div>
               <p className="text-2xs text-[#64748B]">
-                Instruments sale deed transferee as 'Aarav Kumar Patel' vs Aadhaar 'Aarav Patel', triggering first-class cross-registry contradiction detection.
+                Instruments sale deed transferee as 'Aarav Kumar Patel' vs Aadhaar 'Aarav Patel' to demonstrate automatic cross-registry discrepancy detection.
               </p>
             </div>
           </div>

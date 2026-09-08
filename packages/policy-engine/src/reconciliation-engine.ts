@@ -84,19 +84,22 @@ export class ReconciliationEngine {
         propertyCount: currentWorldModel.properties.length,
       };
 
-      const converged = existsInStateRegistry;
+      const forceDivergence = Boolean(transitionContext.forceReconciliationDivergence);
+      const converged = existsInStateRegistry && !forceDivergence;
       if (!converged) allConverged = false;
 
       entityReports.push({
         entityType: 'LAND_TITLE_MUTATION',
         identifier: `Survey No. ${surveyNo} (Devanahalli Taluk)`,
         intendedState: intendedLand,
-        institutionalState,
+        institutionalState: forceDivergence
+          ? { ...institutionalState, existsInStateRegistry: false, disputeNote: 'External registry alteration: Record mismatch in Bhoomi node' }
+          : institutionalState,
         worldModelState,
         status: converged ? 'CONVERGED' : 'DIVERGENT',
         details: converged
           ? 'Institutional Bhoomi mutation confirmed in state registry. Ownership legally vested.'
-          : 'Institutional state mismatch: Mutation pending or unrecorded in Bhoomi state registry.',
+          : 'Institutional state mismatch: Mutation pending, unrecorded, or conflicting in Bhoomi state registry.',
       });
     }
 

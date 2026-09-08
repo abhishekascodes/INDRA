@@ -12,6 +12,10 @@ export function registerDefaultWorkflows(): void {
   registry.register(RecoverDormantPfWorkflow);
   registry.register(StartBusinessWorkflow);
   registry.register(LostPhoneWorkflow);
+  registry.register({
+    ...LostPhoneWorkflow,
+    code: 'LOST_PHONE',
+  });
   registry.register(ResolveMismatchWorkflow);
   registry.register({
     ...ResolveMismatchWorkflow,

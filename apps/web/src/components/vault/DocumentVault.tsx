@@ -55,28 +55,28 @@ export function DocumentVault({ documents = [], onLaunchWorkflow }: DocumentVaul
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-bold tracking-wider uppercase px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md">
-              Encrypted Citizen Vault
+              Your Secure Vault
             </span>
-            <span className="text-sm font-semibold text-[#64748B]">W3C Verifiable Credentials</span>
+            <span className="text-sm font-semibold text-[#64748B]">Official Digital Documents</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">
-            Verifiable Document Vault
+            Saved IDs & Documents
           </h1>
           <p className="text-sm sm:text-base text-[#475569] mt-1.5 leading-relaxed max-w-3xl">
-            Authoritative, cryptographically verified public identity records, licenses, and statutory credentials synchronized directly from sovereign registries.
+            Official identity cards, licenses, and certificates verified directly from government databases.
           </p>
         </div>
 
         <div className="flex items-center space-x-2 text-xs sm:text-sm font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl shrink-0 shadow-2xs">
           <ShieldCheckIcon className="w-4 h-4 text-emerald-600" />
-          <span>Legally Authoritative</span>
+          <span>100% Verified</span>
         </div>
       </div>
 
       {/* Category Filter Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
         {[
-          { id: 'ALL', label: 'All Credentials' },
+          { id: 'ALL', label: 'All Documents' },
           { id: 'IDENTITY', label: 'National Identity' },
           { id: 'TAX', label: 'Tax & Revenue' },
           { id: 'TRANSPORT', label: 'Transport' },
@@ -100,8 +100,8 @@ export function DocumentVault({ documents = [], onLaunchWorkflow }: DocumentVaul
       {filteredDocs.length === 0 ? (
         <div className="text-center py-16 bg-white border border-[#CBD5E1] rounded-2xl shadow-xs">
           <FileTextIcon className="w-8 h-8 text-[#94A3B8] mx-auto mb-3" />
-          <p className="text-base font-bold text-[#0F172A]">No credentials found in this category</p>
-          <p className="text-sm text-[#64748B] mt-1">Select another filter or synchronize from the main dashboard.</p>
+          <p className="text-base font-bold text-[#0F172A]">No documents found in this category</p>
+          <p className="text-sm text-[#64748B] mt-1">Select another filter or check your main dashboard.</p>
         </div>
       ) : (
         <div className="grid items-start grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -125,7 +125,7 @@ export function DocumentVault({ documents = [], onLaunchWorkflow }: DocumentVaul
                     {isPanMismatch ? (
                       <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded flex items-center">
                         <AlertCircleIcon className="w-3.5 h-3.5 mr-1 text-amber-600" />
-                        Discrepancy
+                        Name Mismatch
                       </span>
                     ) : (
                       <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded flex items-center">
@@ -144,7 +144,7 @@ export function DocumentVault({ documents = [], onLaunchWorkflow }: DocumentVaul
 
                   <div className="pt-3 mt-3 border-t border-[#F1F5F9] text-sm text-[#475569] space-y-1.5">
                     <div>
-                      <span className="text-xs text-[#64748B] font-medium block">Issuing Authority:</span>
+                      <span className="text-xs text-[#64748B] font-medium block">Issuing Department:</span>
                       <span className="font-semibold text-[#0F172A]">{doc.issuer}</span>
                     </div>
 
@@ -172,7 +172,7 @@ export function DocumentVault({ documents = [], onLaunchWorkflow }: DocumentVaul
                       onClick={() => onLaunchWorkflow('RESOLVE_NAME_MISMATCH')}
                       className="w-full py-2 px-3 text-xs font-bold bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 rounded-xl transition cursor-pointer flex items-center justify-center space-x-1"
                     >
-                      <span>Harmonize PAN Name with Aadhaar →</span>
+                      <span>Fix Name Mismatch with Aadhaar →</span>
                     </button>
                   </div>
                 )}
