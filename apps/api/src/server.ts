@@ -1726,9 +1726,8 @@ export async function buildApp() {
     await server.register(fastifyStatic, {
       root: webDistPath,
       prefix: '/',
-      wildcard: false,
     });
-    server.get('/*', async (request, reply) => {
+    server.setNotFoundHandler(async (request, reply) => {
       if (request.raw.url && request.raw.url.startsWith('/api')) {
         return reply.status(404).send({ error: 'Endpoint not found' });
       }
