@@ -747,6 +747,45 @@ async function initSchema(client: PGlite) {
       inject_deed_contradiction BOOLEAN NOT NULL DEFAULT TRUE,
       updated_at TIMESTAMP NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS user_accounts (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      citizen_id UUID UNIQUE NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+      account_status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+      synthetic_verification_status VARCHAR(50) NOT NULL DEFAULT 'VERIFIED',
+      synthetic_challenge_hash VARCHAR(255),
+      failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+      locked_until TIMESTAMP,
+      last_login_at TIMESTAMP,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS auth_sessions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      session_token_hash VARCHAR(64) UNIQUE NOT NULL,
+      user_id UUID NOT NULL REFERENCES user_accounts(id) ON DELETE CASCADE,
+      citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+      ip_address VARCHAR(100),
+      user_agent TEXT,
+      expires_at TIMESTAMP NOT NULL,
+      is_revoked BOOLEAN NOT NULL DEFAULT FALSE,
+      revoked_at TIMESTAMP,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS auth_audit_logs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES user_accounts(id) ON DELETE SET NULL,
+      citizen_id UUID REFERENCES citizens(id) ON DELETE SET NULL,
+      event_type VARCHAR(100) NOT NULL,
+      status VARCHAR(50) NOT NULL,
+      ip_address VARCHAR(100),
+      details JSONB NOT NULL DEFAULT '{}',
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
   `);
 }
 

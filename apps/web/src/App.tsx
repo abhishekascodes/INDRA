@@ -10,7 +10,8 @@ import { CitizenActivityView } from './components/activity/CitizenActivityView.j
 import { WorldModelInspector } from './components/world-model/WorldModelInspector.js';
 import { ActionPlanViewer } from './components/action-plans/ActionPlanViewer.js';
 import { ProactiveFindingsBanner } from './components/action-plans/ProactiveFindingsBanner.js';
-import { CloseIcon } from './components/icons.js';
+import { IndraAuthPortal } from './components/auth/IndraAuthPortal.js';
+import { CloseIcon, IndraEmblemIcon } from './components/icons.js';
 import { formatHumanLabel } from './utils/civicFormatters.js';
 
 import {
@@ -20,14 +21,25 @@ import {
   fetchApplications,
   fetchAuditLogs,
   fetchConsents,
-  fetchSyntheticCitizensList,
   startWorkflow,
   subscribeEvents,
-  setActiveCitizenId,
-  getActiveCitizenId,
+  fetchAuthMe,
+  logout,
 } from './api.js';
 
 export function App() {
+  const [authState, setAuthState] = useState<{
+    isLoading: boolean;
+    authenticated: boolean;
+    user: any;
+    citizen: any;
+  }>({
+    isLoading: true,
+    authenticated: false,
+    user: null,
+    citizen: null,
+  });
+
   const [activeTab, setActiveTab] = useState<NavTab>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.replace('#', '');
@@ -45,26 +57,26 @@ export function App() {
     setActiveTab(tab);
     setActiveWorkflowRun(null);
   };
+
   const [citizen, setCitizen] = useState<any>(null);
-  const [availableCitizens, setAvailableCitizens] = useState<any[]>([]);
   const [inboxItems, setInboxItems] = useState<any[]>([]);
   const [vaultDocs, setVaultDocs] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [consents, setConsents] = useState<any[]>([]);
   const [activeWorkflowRun, setActiveWorkflowRun] = useState<WorkflowRunSummary | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
-      const [prof, inb, vlt, apps, logs, cs, citizenList] = await Promise.all([
+      setIsLoading(true);
+      const [prof, inb, vlt, apps, logs, cs] = await Promise.all([
         fetchCitizenProfile().catch(() => ({ citizen: null })),
         fetchInbox().catch(() => ({ items: [] })),
         fetchVault().catch(() => ({ documents: [] })),
         fetchApplications().catch(() => ({ applications: [] })),
         fetchAuditLogs().catch(() => ({ logs: [] })),
         fetchConsents().catch(() => ({ consents: [] })),
-        fetchSyntheticCitizensList().catch(() => ({ citizens: [] })),
       ]);
 
       const citizenData = prof.citizen || prof.profile;
@@ -74,9 +86,6 @@ export function App() {
       setApplications(apps.applications || []);
       setAuditLogs(logs.logs || []);
       setConsents(cs.consents || []);
-      if (citizenList.citizens && citizenList.citizens.length > 0) {
-        setAvailableCitizens(citizenList.citizens);
-      }
     } catch (err) {
       console.error('Failed to load portal data:', err);
     } finally {
@@ -84,12 +93,79 @@ export function App() {
     }
   }, []);
 
+  // Initial Auth Check
   useEffect(() => {
+    let isMounted = true;
+    fetchAuthMe()
+      .then((res) => {
+        if (!isMounted) return;
+        if (res.authenticated && res.citizen) {
+          setAuthState({
+            isLoading: false,
+            authenticated: true,
+            user: res.user,
+            citizen: res.citizen,
+          });
+          setCitizen(res.citizen);
+          loadData();
+        } else {
+          setAuthState({
+            isLoading: false,
+            authenticated: false,
+            user: null,
+            citizen: null,
+          });
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAuthState({
+            isLoading: false,
+            authenticated: false,
+            user: null,
+            citizen: null,
+          });
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [loadData]);
+
+  const handleAuthenticated = (user: any, authCitizen: any) => {
+    setAuthState({
+      isLoading: false,
+      authenticated: true,
+      user,
+      citizen: authCitizen,
+    });
+    setCitizen(authCitizen);
     loadData();
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // ignore
+    }
+    setAuthState({
+      isLoading: false,
+      authenticated: false,
+      user: null,
+      citizen: null,
+    });
+    setCitizen(null);
+    setActiveWorkflowRun(null);
+    window.location.hash = 'home';
+  };
+
+  useEffect(() => {
+    if (!authState.authenticated) return;
 
     // Subscribe to SSE Event Stream for live system updates
     const unsubscribe = subscribeEvents((event) => {
-      // Refresh applications and audit logs on any workflow state change
       if (event.aggregateType === 'WORKFLOW') {
         fetchApplications().then((a) => setApplications(a.applications || [])).catch(() => {});
         fetchAuditLogs().then((l) => setAuditLogs(l.logs || [])).catch(() => {});
@@ -97,7 +173,6 @@ export function App() {
       }
     });
 
-    // Subscribe to hash changes for deep linking
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
       if (['home', 'world-model', 'action-plans', 'transitions', 'inbox', 'vault', 'trust'].includes(hash)) {
@@ -111,14 +186,7 @@ export function App() {
       unsubscribe();
       window.removeEventListener('hashchange', handleHashChange);
     };
-  }, [loadData]);
-
-  const handleSwitchCitizen = (citizenId: string) => {
-    setActiveCitizenId(citizenId);
-    setActiveWorkflowRun(null);
-    setIsLoading(true);
-    loadData();
-  };
+  }, [authState.authenticated]);
 
   const [appError, setAppError] = useState<string | null>(null);
 
@@ -137,7 +205,6 @@ export function App() {
 
   const handleWorkflowUpdated = (updatedRun: WorkflowRunSummary) => {
     setActiveWorkflowRun(updatedRun);
-    // Refresh background state
     fetchApplications().then((a) => setApplications(a.applications || [])).catch(() => {});
     fetchAuditLogs().then((l) => setAuditLogs(l.logs || [])).catch(() => {});
     fetchConsents().then((c) => setConsents(c.consents || [])).catch(() => {});
@@ -150,9 +217,28 @@ export function App() {
 
   const unreadCount = inboxItems.filter((i) => !i.isRead).length;
 
+  // 1. Loading Gateway Splash
+  if (authState.isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0F172A] flex flex-col items-center justify-center">
+        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center p-2 text-white animate-pulse">
+          <IndraEmblemIcon className="w-8 h-8 text-white" />
+        </div>
+        <div className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-400">
+          Verifying Sovereign Citizen Session...
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Unauthenticated Citizen Gateway
+  if (!authState.authenticated) {
+    return <IndraAuthPortal onAuthenticated={handleAuthenticated} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] text-[#0F172A] font-sans">
-      {/* 1. CIVIC HEADER WITH SYNTHETIC DISCLOSURE & CITIZEN SWITCHER */}
+      {/* 1. CIVIC HEADER WITH AUTHENTICATED PROFILE & LOGOUT */}
       <Header
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
@@ -163,9 +249,7 @@ export function App() {
             ? `${citizen.currentCity}, ${citizen.currentState}`
             : undefined
         }
-        availableCitizens={availableCitizens}
-        activeCitizenId={getActiveCitizenId() || citizen?.id}
-        onSwitchCitizen={handleSwitchCitizen}
+        onLogout={handleLogout}
       />
 
       {/* 2. MAIN APPLICATION CONTENT */}

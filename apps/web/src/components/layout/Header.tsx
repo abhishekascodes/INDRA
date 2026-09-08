@@ -21,20 +21,16 @@ interface HeaderProps {
   inboxUnreadCount: number;
   citizenName?: string;
   citizenLocation?: string;
-  availableCitizens?: Array<{ id: string; primaryName: string; currentCity: string; currentState: string }>;
-  activeCitizenId?: string;
-  onSwitchCitizen?: (id: string) => void;
+  onLogout?: () => void;
 }
 
 export function Header({
   activeTab,
   onSelectTab,
   inboxUnreadCount,
-  citizenName = 'Priya Sharma',
+  citizenName = 'Aarav Patel',
   citizenLocation = 'Bengaluru, KA',
-  availableCitizens = [],
-  activeCitizenId,
-  onSwitchCitizen,
+  onLogout,
 }: HeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -174,7 +170,7 @@ export function Header({
           </button>
         </nav>
 
-        {/* 3. RIGHT CITIZEN IDENTITY PILL & PROFILE SWITCHER */}
+        {/* 3. RIGHT CITIZEN IDENTITY PILL & AUTHENTICATED PROFILE MENU */}
         <div ref={dropdownRef} className="relative shrink-0">
           <button
             type="button"
@@ -184,7 +180,7 @@ export function Header({
                 ? 'bg-white border-[#0F172A] ring-2 ring-[#0F172A]/10 shadow-xs'
                 : 'bg-white hover:bg-[#F8FAFC] border-[#CBD5E1] hover:border-[#94A3B8] shadow-2xs'
             }`}
-            title="Switch Profile"
+            title="Citizen Account"
           >
             <div className="relative">
               <CitizenAvatarIcon className="w-7 h-7 shrink-0" />
@@ -203,71 +199,45 @@ export function Header({
             />
           </button>
 
-          {/* Elevated Persona Dropdown Menu */}
+          {/* Authenticated Citizen Profile Dropdown Card */}
           {isDropdownOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white border border-[#CBD5E1] rounded-2xl shadow-xl z-50 p-2 animate-fadeIn">
-              <div className="px-3 pt-2 pb-1.5 border-b border-[#F1F5F9]">
-                <div className="text-xs font-bold uppercase tracking-wider text-[#64748B]">
-                  Switch Profile
-                </div>
-                <div className="text-xs text-[#94A3B8] mt-0.5">
-                  Select an active citizen profile to view personalized records and filings.
+            <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-[#CBD5E1] rounded-2xl shadow-xl z-50 p-3 animate-fadeIn">
+              <div className="flex items-center space-x-3 pb-3 border-b border-[#F1F5F9]">
+                <CitizenAvatarIcon className="w-10 h-10 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-[#0F172A] truncate">{citizenName}</div>
+                  <div className="text-xs text-[#64748B] truncate">{citizenLocation}</div>
                 </div>
               </div>
 
-              <div className="space-y-1.5 pt-2">
-                {availableCitizens.map((c) => {
-                  const isSelected = activeCitizenId === c.id;
-                  const isPriya = c.primaryName.includes('Priya');
+              <div className="py-2.5 space-y-2 border-b border-[#F1F5F9]">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#64748B] font-medium">Status</span>
+                  <span className="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    ✓ Verified Citizen
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#64748B] font-medium">Security</span>
+                  <span className="inline-flex items-center text-xs text-slate-600 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1.5" />
+                    Secure session active
+                  </span>
+                </div>
+              </div>
 
-                  return (
-                    <div
-                      key={c.id}
-                      data-testid={`switch-citizen-${c.id}`}
-                      data-citizen-name={c.primaryName}
-                      onClick={() => {
-                        if (onSwitchCitizen) {
-                          onSwitchCitizen(c.id);
-                        }
-                        setIsDropdownOpen(false);
-                      }}
-                      className={`p-3 rounded-xl transition cursor-pointer border ${
-                        isSelected
-                          ? 'bg-[#F8FAFC] border-[#0F172A] shadow-2xs'
-                          : 'bg-white hover:bg-[#F8FAFC] border-transparent hover:border-[#E2E8F0]'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center space-x-3">
-                          <CitizenAvatarIcon className="w-9 h-9 shrink-0" />
-                          <div>
-                            <div className="text-sm font-bold text-[#0F172A] flex items-center gap-1.5">
-                              <span>{c.primaryName}</span>
-                              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                                {isPriya ? 'Tech Sector' : 'MSME & Agriculture'}
-                              </span>
-                            </div>
-                            <div className="text-xs text-[#64748B] mt-0.5">
-                              {c.currentCity}, {c.currentState}
-                            </div>
-                          </div>
-                        </div>
-
-                        {isSelected && (
-                          <div className="p-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <CheckIcon className="w-3.5 h-3.5 text-emerald-600" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mt-2 pt-2 border-t border-[#F1F5F9] text-xs text-[#64748B]">
-                        {isPriya
-                          ? 'Key Records: EPFO Active · Ather 450X · Passport Expiring · Flat 402 BBMP'
-                          : 'Key Records: GST Active · Satara Land Parcel · PM-KISAN Subsidy · ITR-2 Due'}
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    if (onLogout) onLogout();
+                  }}
+                  className="w-full px-3 py-2 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors text-left flex items-center justify-between cursor-pointer"
+                >
+                  <span>Log Out</span>
+                  <span className="text-rose-400">→</span>
+                </button>
               </div>
             </div>
           )}

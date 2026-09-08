@@ -1,6 +1,7 @@
 import { getDb } from './client.js';
 import * as schema from './schema.js';
 import { eq } from 'drizzle-orm';
+import { hashPassword, hashChallenge } from './auth-utils.js';
 
 export const PRIYA_SHARMA_ID = 'e8b0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3';
 export const AARAV_PATEL_ID = 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e';
@@ -12,6 +13,33 @@ export async function resetDatabase(db: any = null) {
   await database.delete(schema.citizens).where(eq(schema.citizens.id, PRIYA_SHARMA_ID));
   await database.delete(schema.citizens).where(eq(schema.citizens.id, AARAV_PATEL_ID));
   return seedDatabase(database);
+}
+
+async function seedAuthAccounts(database: any) {
+  const existingAccounts = await database.select().from(schema.userAccounts);
+  const priyaAccount = existingAccounts.find((a: any) => a.citizenId === PRIYA_SHARMA_ID);
+  if (!priyaAccount) {
+    await database.insert(schema.userAccounts).values({
+      email: 'priya.sharma@example.in',
+      passwordHash: hashPassword('Password123!'),
+      citizenId: PRIYA_SHARMA_ID,
+      accountStatus: 'ACTIVE',
+      syntheticVerificationStatus: 'VERIFIED',
+      syntheticChallengeHash: hashChallenge('9012'),
+    });
+  }
+
+  const aaravAccount = existingAccounts.find((a: any) => a.citizenId === AARAV_PATEL_ID);
+  if (!aaravAccount) {
+    await database.insert(schema.userAccounts).values({
+      email: 'aarav.patel@example.in',
+      passwordHash: hashPassword('Password123!'),
+      citizenId: AARAV_PATEL_ID,
+      accountStatus: 'ACTIVE',
+      syntheticVerificationStatus: 'VERIFIED',
+      syntheticChallengeHash: hashChallenge('4567'),
+    });
+  }
 }
 
 export async function seedDatabase(db: any = null) {
@@ -29,6 +57,7 @@ export async function seedDatabase(db: any = null) {
     .where(eq(schema.citizens.id, AARAV_PATEL_ID));
 
   if (existingPriya.length > 0 && existingAarav.length > 0) {
+    await seedAuthAccounts(database);
     console.log('[Seed] Database already fully seeded with synthetic citizens.');
     return { citizenId: PRIYA_SHARMA_ID, secondaryCitizenId: AARAV_PATEL_ID };
   }
@@ -872,6 +901,7 @@ export async function seedDatabase(db: any = null) {
   ]);
   }
 
+  await seedAuthAccounts(database);
 
   console.log('[Seed] Seeding completed successfully!');
   return { citizenId: PRIYA_SHARMA_ID, secondaryCitizenId: AARAV_PATEL_ID };

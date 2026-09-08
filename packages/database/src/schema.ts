@@ -804,3 +804,54 @@ export const syntheticOutageConfig = pgTable('synthetic_outage_config', {
   injectDeedContradiction: boolean('inject_deed_contradiction').default(true).notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// =========================================================================
+// AUTHENTICATION, SESSIONS & SECURITY AUDIT
+// =========================================================================
+
+export const userAccounts = pgTable('user_accounts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).unique().notNull(),
+  passwordHash: text('password_hash').notNull(),
+  citizenId: uuid('citizen_id')
+    .references(() => citizens.id, { onDelete: 'cascade' })
+    .unique()
+    .notNull(),
+  accountStatus: varchar('account_status', { length: 50 }).default('ACTIVE').notNull(),
+  syntheticVerificationStatus: varchar('synthetic_verification_status', { length: 50 }).default('VERIFIED').notNull(),
+  syntheticChallengeHash: varchar('synthetic_challenge_hash', { length: 255 }),
+  failedLoginAttempts: integer('failed_login_attempts').default(0).notNull(),
+  lockedUntil: timestamp('locked_until'),
+  lastLoginAt: timestamp('last_login_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const authSessions = pgTable('auth_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionTokenHash: varchar('session_token_hash', { length: 64 }).unique().notNull(),
+  userId: uuid('user_id')
+    .references(() => userAccounts.id, { onDelete: 'cascade' })
+    .notNull(),
+  citizenId: uuid('citizen_id')
+    .references(() => citizens.id, { onDelete: 'cascade' })
+    .notNull(),
+  ipAddress: varchar('ip_address', { length: 100 }),
+  userAgent: text('user_agent'),
+  expiresAt: timestamp('expires_at').notNull(),
+  isRevoked: boolean('is_revoked').default(false).notNull(),
+  revokedAt: timestamp('revoked_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const authAuditLogs = pgTable('auth_audit_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id'),
+  citizenId: uuid('citizen_id'),
+  eventType: varchar('event_type', { length: 100 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull(),
+  ipAddress: varchar('ip_address', { length: 100 }),
+  details: jsonb('details').default({}).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
