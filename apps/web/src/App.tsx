@@ -6,7 +6,7 @@ import { DynamicWorkspaceRenderer } from './components/workspace/DynamicWorkspac
 import { GovernmentInbox } from './components/inbox/GovernmentInbox.js';
 import { DocumentVault } from './components/vault/DocumentVault.js';
 import { TrustPrivacy } from './components/trust/TrustPrivacy.js';
-import { CitizenTransitionConsole } from './components/transition/CitizenTransitionConsole.js';
+import { CitizenActivityView } from './components/activity/CitizenActivityView.js';
 import { WorldModelInspector } from './components/world-model/WorldModelInspector.js';
 import { ActionPlanViewer } from './components/action-plans/ActionPlanViewer.js';
 import { ProactiveFindingsBanner } from './components/action-plans/ProactiveFindingsBanner.js';
@@ -218,9 +218,10 @@ export function App() {
             )}
 
             {activeTab === 'transitions' && (
-              <CitizenTransitionConsole
+              <CitizenActivityView
                 citizen={citizen}
                 onRefreshCitizen={loadData}
+                onNavigateToRecords={() => handleSelectTab('world-model')}
               />
             )}
 
@@ -249,13 +250,14 @@ export function App() {
       </main>
 
       {/* 3. CIVIC FOOTER */}
-      <footer className="border-t border-[#E2E8F0] bg-white py-6 text-center text-xs text-[#94A3B8]">
+      <footer className="border-t border-[#E2E8F0] bg-white py-6 text-center text-xs text-slate-500">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="font-semibold text-[#64748B]">
-            INDRA — Sovereign Citizen Operating Platform · Official Digital Public Infrastructure
+          <div className="font-bold text-slate-700 flex items-center space-x-2">
+            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+            <span>INDRA PROTOTYPE · SYNTHETIC PUBLIC INFRASTRUCTURE</span>
           </div>
-          <div className="text-xs text-[#94A3B8]">
-            Encrypted citizen session. Direct integration with verified public registries.
+          <div className="text-xs text-slate-400">
+            Operating against simulated public registries for research, architectural certification & demonstration.
           </div>
         </div>
       </footer>

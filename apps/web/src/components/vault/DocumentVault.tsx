@@ -57,7 +57,9 @@ export function DocumentVault({ documents = [], onLaunchWorkflow }: DocumentVaul
             <span className="text-xs font-bold tracking-wider uppercase px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md">
               Your Secure Vault
             </span>
-            <span className="text-sm font-semibold text-[#64748B]">Official Digital Documents</span>
+            <span className="text-xs font-semibold text-slate-500">
+              Official Digital Documents · Synthetic Digital Receipts
+            </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">
             Saved IDs & Documents

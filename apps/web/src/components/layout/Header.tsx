@@ -77,7 +77,7 @@ export function Header({
           <div className="flex items-center space-x-2">
             <span className="font-sans font-black text-xl tracking-tight text-[#0F172A]">INDRA</span>
             <span className="px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[10px] font-extrabold tracking-wider uppercase text-slate-600">
-              CIVIC OS
+              CIVIC OS · PROTOTYPE
             </span>
           </div>
         </div>

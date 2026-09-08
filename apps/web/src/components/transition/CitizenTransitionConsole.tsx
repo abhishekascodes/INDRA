@@ -69,20 +69,34 @@ export function CitizenTransitionConsole({
 
   const loadTransitions = useCallback(async () => {
     try {
+      setIsLoading(true);
       const list = await fetchCitizenTransitions();
       setRecentTransitions(list);
-      if (list.length > 0 && !activeTransition) {
+      if (list.length > 0) {
         setActiveTransition(list[0]);
+      } else {
+        // Auto-initiate flagship transition
+        const transition = await initiateTransition(query, {
+          destinationCity: 'Bengaluru',
+          destinationState: 'Karnataka',
+          surveyNumber: '142/3',
+          village: 'Devanahalli',
+        });
+        setRecentTransitions([transition]);
+        setActiveTransition(transition);
       }
     } catch (err: any) {
       console.warn('Could not load existing transitions:', err);
+    } finally {
+      setIsLoading(false);
     }
-  }, [activeTransition]);
+  }, [query]);
 
   useEffect(() => {
+    setActiveTransition(null);
     loadTransitions();
     checkSimulationStatus();
-  }, [citizen?.id, loadTransitions, checkSimulationStatus]);
+  }, [citizen?.id, checkSimulationStatus, loadTransitions]);
 
   const handleInitiate = async (textToSubmit?: string) => {
     const q = textToSubmit || query;
@@ -190,19 +204,19 @@ export function CitizenTransitionConsole({
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* 1. HERO EVALUATION CARD */}
-      <div className="bg-white border border-[#CBD5E1] rounded-2xl p-6 shadow-2xs space-y-4">
+      <div className="bg-white border border-[#CBD5E1] rounded-2xl p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h2 className="text-lg font-bold text-[#0F172A]">Life Transitions</h2>
+            <h2 className="text-xl font-extrabold text-[#0F172A] tracking-tight">State-Transition Engine</h2>
             <p className="text-xs text-[#64748B] mt-0.5">
               Coordinate multi-authority filings, land registrations, and address changes across government departments automatically.
             </p>
           </div>
 
           <div className="flex items-center space-x-2 text-2xs text-[#475569]">
-            <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg">
+            <span className="inline-flex items-center space-x-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full font-semibold">
               <ShieldCheckIcon className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="font-medium">Statutory Multi-Authority Engine</span>
+              <span>Statutory Multi-Authority Engine</span>
             </span>
           </div>
         </div>
@@ -213,7 +227,7 @@ export function CitizenTransitionConsole({
             e.preventDefault();
             handleInitiate();
           }}
-          className="space-y-2.5"
+          className="space-y-3"
         >
           <div className="relative">
             <input
@@ -221,12 +235,12 @@ export function CitizenTransitionConsole({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Describe a life event (e.g., I moved to Bangalore and bought a plot in Devanahalli...)"
-              className="w-full pl-4 pr-36 py-3 bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-sm text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0F172A]/20 focus:border-[#0F172A] transition"
+              className="w-full pl-4 pr-36 py-3 bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-sm text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0F172A]/20 focus:border-[#0F172A] transition shadow-xs"
             />
             <button
               type="submit"
               disabled={isLoading || !query.trim()}
-              className="absolute right-2 top-2 bottom-2 px-4 rounded-lg bg-[#0F172A] hover:bg-black text-white text-xs font-semibold transition cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
+              className="absolute right-2 top-2 bottom-2 px-4 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold transition cursor-pointer disabled:opacity-50 flex items-center space-x-1.5 shadow-xs"
             >
               {isLoading ? (
                 <span>Evaluating...</span>
@@ -240,8 +254,8 @@ export function CitizenTransitionConsole({
           </div>
 
           {/* Preset Chips */}
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span className="text-2xs font-semibold text-[#64748B]">Life Event Scenarios:</span>
+          <div className="flex flex-wrap items-center gap-2 pt-0.5">
+            <span className="text-2xs font-bold text-[#64748B] uppercase tracking-wider">Scenarios:</span>
             {[
               'I moved to Bangalore and bought a plot in Devanahalli.',
               'I joined a new company in Hyderabad as Senior Engineer.',
@@ -254,7 +268,11 @@ export function CitizenTransitionConsole({
                   setQuery(preset);
                   handleInitiate(preset);
                 }}
-                className="px-2.5 py-1 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white text-2xs font-medium text-[#475569] transition cursor-pointer"
+                className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition cursor-pointer ${
+                  query === preset
+                    ? 'border-[#0F172A] bg-[#0F172A] text-white shadow-xs'
+                    : 'border-[#CBD5E1] bg-white hover:bg-[#F8FAFC] text-[#334155]'
+                }`}
               >
                 {preset}
               </button>
@@ -384,7 +402,9 @@ export function CitizenTransitionConsole({
                   <span>Registered Deed</span>
                 </div>
                 <div className="font-bold text-[#0F172A]">Doc #KA-BLR-DEV-2026-00481</div>
-                <div className="text-2xs text-[#64748B]">Transferee: Priya Kumar Patel</div>
+                <div className="text-2xs text-[#64748B]">
+                  Transferee: {String(activeTransition.contradictions?.[0]?.observedValues?.registeredSaleDeedTransferee || (citizen?.primaryName ? `${citizen.primaryName.split(' ')[0]} Kumar Patel` : 'Transferee'))}
+                </div>
                 <div className="text-2xs text-emerald-700 font-medium mt-1">✓ Kaveri 2.0 Registered</div>
               </div>
 
@@ -394,7 +414,9 @@ export function CitizenTransitionConsole({
                   <span>National Identity</span>
                 </div>
                 <div className="font-bold text-[#0F172A]">Aadhaar Master Record</div>
-                <div className="text-2xs text-[#64748B]">Holder: Priya Sharma</div>
+                <div className="text-2xs text-[#64748B]">
+                  Holder: {citizen?.primaryName || 'Verified Citizen'}
+                </div>
                 <div className="text-2xs text-emerald-700 font-medium mt-1">✓ UIDAI Verified</div>
               </div>
 
@@ -717,13 +739,42 @@ export function CitizenTransitionConsole({
             </div>
           )}
         </div>
+      ) : isLoading ? (
+        <div className="bg-white border border-[#CBD5E1] rounded-2xl p-10 text-center shadow-xs space-y-4">
+          <div className="w-12 h-12 mx-auto rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-700 animate-pulse">
+            <IndraEmblemIcon className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-[#0F172A]">
+              Synthesizing Multi-Authority Transition Cascade
+            </h3>
+            <p className="text-xs text-[#64748B] max-w-md mx-auto">
+              Evaluating statutory dependencies across Kaveri 2.0 Sub-Registrar, Bhoomi Land Records, UIDAI CIDR, and MoRTH Vahan...
+            </p>
+          </div>
+          <div className="flex items-center justify-center space-x-2 pt-2">
+            <div className="w-2 h-2 rounded-full bg-[#0F172A] animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 rounded-full bg-[#0F172A] animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 rounded-full bg-[#0F172A] animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+        </div>
       ) : (
-        <div className="bg-white border border-[#CBD5E1] rounded-2xl p-12 text-center shadow-2xs">
-          <IndraEmblemIcon className="w-10 h-10 mx-auto mb-3 opacity-60" />
-          <h3 className="text-sm font-bold text-[#0F172A]">No Active Transition Plan</h3>
-          <p className="text-xs text-[#64748B] max-w-md mx-auto mt-1">
-            Enter a life event above to evaluate cross-department filings and coordinate updates automatically.
-          </p>
+        <div className="bg-white border border-[#CBD5E1] rounded-2xl p-8 text-center shadow-xs space-y-3">
+          <IndraEmblemIcon className="w-8 h-8 mx-auto opacity-50 text-[#0F172A]" />
+          <div>
+            <h3 className="text-sm font-bold text-[#0F172A]">Flagship Bangalore Relocation Scenario</h3>
+            <p className="text-xs text-[#64748B] max-w-md mx-auto mt-0.5">
+              Click below to evaluate cross-department filings and coordinate updates automatically.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleInitiate(query)}
+            className="px-4 py-2 bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5"
+          >
+            <span>Evaluate Flagship Bangalore Scenario</span>
+            <ArrowRightIcon className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
     </div>

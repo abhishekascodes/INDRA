@@ -4,7 +4,7 @@ import fastifyStatic from '@fastify/static';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import { getDb, schema, seedDatabase, PRIYA_SHARMA_ID } from '@indra/database';
+import { getDb, schema, seedDatabase, PRIYA_SHARMA_ID, AARAV_PATEL_ID } from '@indra/database';
 import { eq, desc, and } from 'drizzle-orm';
 import {
   CapabilityRegistry,
@@ -39,7 +39,10 @@ const eventBus = EventBus.getInstance();
 
 export function getAuthenticatedCitizenId(request: any): string {
   const citizenIdHeader = request.headers['x-citizen-id'] as string;
-  return citizenIdHeader || PRIYA_SHARMA_ID;
+  if (!citizenIdHeader) return PRIYA_SHARMA_ID;
+  if (citizenIdHeader === 'aarav-patel' || citizenIdHeader === 'aarav') return AARAV_PATEL_ID;
+  if (citizenIdHeader === 'priya-sharma' || citizenIdHeader === 'priya') return PRIYA_SHARMA_ID;
+  return citizenIdHeader;
 }
 
 export async function buildApp() {
@@ -918,7 +921,24 @@ export async function buildApp() {
   // 3. List Citizen State Transitions
   server.get('/api/citizen/transitions', async (request) => {
     const authCitizenId = getAuthenticatedCitizenId(request);
-    const transitions = await transitionExecutor.listTransitions(authCitizenId);
+    let transitions = await transitionExecutor.listTransitions(authCitizenId);
+    if (transitions.length === 0) {
+      try {
+        const defaultTransition = await transitionExecutor.initiateTransition({
+          citizenId: authCitizenId,
+          query: 'I moved to Bangalore and bought a plot in Devanahalli.',
+          context: {
+            destinationCity: 'Bengaluru',
+            destinationState: 'Karnataka',
+            surveyNumber: '142/3',
+            village: 'Devanahalli',
+          },
+        });
+        transitions = [defaultTransition];
+      } catch (err) {
+        request.log.warn(err, 'Failed to auto-seed default transition for citizen');
+      }
+    }
     return { count: transitions.length, transitions };
   });
 

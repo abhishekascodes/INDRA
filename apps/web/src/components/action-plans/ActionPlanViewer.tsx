@@ -648,9 +648,9 @@ export const ActionPlanViewer: React.FC<ActionPlanViewerProps> = ({ citizen }) =
       <div className="w-12 h-12 rounded-full bg-[#F1F5F9] flex items-center justify-center mx-auto mb-3 text-[#64748B]">
         <MapPinIcon className="w-6 h-6" />
       </div>
-      <p className="text-base font-bold text-[#0F172A]">No action plans created yet</p>
+      <p className="text-base font-bold text-[#0F172A]">Nothing is in progress</p>
       <p className="text-sm text-[#64748B] mt-1 max-w-md mx-auto mb-4">
-        Select a life event to automatically coordinate all filings across official public registries.
+        Start by telling INDRA what you need to get done, or choose a life event to coordinate required filings across official registries.
       </p>
       <button
         onClick={() => setIsModalOpen(true)}

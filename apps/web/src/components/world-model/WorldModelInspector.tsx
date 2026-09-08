@@ -71,7 +71,9 @@ export const WorldModelInspector: React.FC<WorldModelInspectorProps> = ({ citize
               <span className="text-xs font-bold tracking-wider uppercase px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md">
                 Official Public Record
               </span>
-              <span className="text-sm font-semibold text-[#64748B]">Synchronized with National Registries</span>
+              <span className="text-xs font-semibold text-slate-500">
+                Simulated Public Record · Synchronized with National Registries
+              </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">
               My Official Public Records
