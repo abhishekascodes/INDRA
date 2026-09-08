@@ -4,10 +4,6 @@ import {
   ShieldCheckIcon,
   LockIcon,
   AlertCircleIcon,
-  UserIcon,
-  CheckIcon,
-  InfoIcon,
-  ChevronDownIcon,
   ArrowRightIcon,
 } from '../icons.js';
 import { login, signup } from '../../api.js';
@@ -133,10 +129,6 @@ export function IndraAuthPortal({ onAuthenticated }: IndraAuthPortalProps) {
         <div className="w-full max-w-[460px]">
           {/* Gateway Title Block */}
           <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 mb-3 shadow-2xs">
-              <ShieldCheckIcon className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Sovereign Citizen Access Gateway</span>
-            </div>
             <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-[#0F172A]">
               INDRA
             </h1>
@@ -148,142 +140,55 @@ export function IndraAuthPortal({ onAuthenticated }: IndraAuthPortalProps) {
             </p>
           </div>
 
-          {/* PROMINENT EVALUATION ACCESS PANEL (SELF-DISCOVERABLE FOR EVALUATORS) */}
-          <div className="mb-6 bg-slate-900 text-white rounded-2xl p-5 border-2 border-emerald-500/40 shadow-lg relative overflow-hidden">
-            <div className="absolute top-0 right-0 transform translate-x-4 -translate-y-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
-
-            <div className="flex items-center justify-between gap-2 mb-3.5 relative z-10">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center">
-                  <ShieldCheckIcon className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                      Evaluation Access
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-600/60 text-emerald-300">
-                      Judges & Evaluators
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-300 font-medium mt-0.5">
-                    Instant access to pre-seeded synthetic test scenarios
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Aarav Patel Primary Card (Flagship Scenario) */}
-            <div className="bg-slate-800/90 rounded-xl p-4 border border-emerald-500/40 relative z-10 mb-3">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-white tracking-wide">
-                      Aarav Patel — Demo Citizen
-                    </span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-400/40 text-blue-300 uppercase tracking-wider">
-                      Flagship Scenario
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-300 mt-1 leading-snug">
-                    Deterministic cross-agency life transition: Gazette name change, Bhoomi land sync, EPFO PF transfer & synthetic biometric reconciliation.
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-slate-900/80 rounded-lg p-2.5 border border-slate-700/60 mb-3 text-xs font-mono text-slate-300 flex flex-wrap items-center justify-between gap-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400 text-[11px]">Email:</span>
-                  <span className="text-emerald-300 font-semibold selection:bg-emerald-800">aarav.patel@example.in</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400 text-[11px]">Password:</span>
-                  <span className="text-slate-200 font-semibold selection:bg-slate-700">Password123!</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={isLoading}
-                  onClick={() => handleDirectDemoLogin('aarav.patel@example.in', 'Password123!')}
-                  className="flex-1 py-2.5 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] text-slate-950 font-black text-xs tracking-wide transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
-                >
-                  <span>Use Demo Account (Aarav Patel)</span>
-                  <ArrowRightIcon className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleFillDemo('aarav.patel@example.in', 'Password123!');
-                    if (mode !== 'login') setMode('login');
-                  }}
-                  className="py-2.5 px-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold transition-all cursor-pointer"
-                  title="Prefill credentials into form below"
-                >
-                  Fill Form
-                </button>
-              </div>
-            </div>
-
-            {/* Priya Sharma Secondary Profile */}
-            <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/70 relative z-10">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-slate-200">
-                      Priya Sharma — Demo Citizen
-                    </span>
-                    <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-slate-700 text-slate-300">
-                      Secondary Profile
-                    </span>
-                  </div>
-                  <div className="text-[11px] font-mono text-slate-400 mt-0.5">
-                    priya.sharma@example.in · <span className="text-slate-300">Password123!</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    disabled={isLoading}
-                    onClick={() => handleDirectDemoLogin('priya.sharma@example.in', 'Password123!')}
-                    className="py-1.5 px-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                  >
-                    <span>Use Account</span>
-                    <ArrowRightIcon className="w-3 h-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleFillDemo('priya.sharma@example.in', 'Password123!');
-                      if (mode !== 'login') setMode('login');
-                    }}
-                    className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all cursor-pointer"
-                    title="Prefill credentials into form below"
-                  >
-                    Fill
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3 text-[10px] text-slate-400 text-center flex items-center justify-center gap-2">
-              <span className="inline-flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Zero configuration required</span>
+          {/* Compact Evaluation Access Card */}
+          <div className="mb-4 bg-white rounded-2xl border border-[#CBD5E1] p-4 shadow-xs text-left">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-[11px] font-bold text-[#475569] uppercase tracking-wider flex items-center gap-1.5">
+                <ShieldCheckIcon className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Evaluation Access</span>
               </span>
-              <span>·</span>
-              <span>100% Synthetic Sandbox Data</span>
+              <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                Pre-seeded Demo
+              </span>
             </div>
-          </div>
 
-          {/* Divider between Demo Access and Custom Sign In */}
-          <div className="relative flex items-center justify-center mb-5">
-            <div className="border-t border-slate-300 w-full" />
-            <span className="bg-[#FAFAFA] px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
-              Or Sign In With Custom Credentials
-            </span>
-            <div className="border-t border-slate-300 w-full" />
+            {/* Aarav Patel Primary */}
+            <div className="p-3 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] mb-2">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div>
+                  <div className="text-xs font-bold text-[#0F172A]">Aarav Patel — Demo Citizen</div>
+                  <div className="text-[10px] text-[#64748B] font-mono mt-0.5">
+                    aarav.patel@example.in · Password123!
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={() => handleDirectDemoLogin('aarav.patel@example.in', 'Password123!')}
+                className="w-full py-2 px-3 rounded-lg bg-[#0F172A] hover:bg-slate-800 active:scale-[0.99] text-white font-bold text-xs tracking-wide transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                <span>Use Demo Account (Aarav Patel)</span>
+                <ArrowRightIcon className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Priya Sharma Secondary */}
+            <div className="flex items-center justify-between px-2.5 py-1.5 bg-[#F8FAFC] rounded-lg border border-[#E2E8F0]/70 text-xs">
+              <div className="text-[11px] text-[#64748B]">
+                <span className="font-semibold text-[#334155]">Priya Sharma: </span>
+                <span className="font-mono text-[10px]">priya.sharma@example.in</span>
+              </div>
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={() => handleDirectDemoLogin('priya.sharma@example.in', 'Password123!')}
+                className="text-xs font-semibold text-slate-700 hover:text-[#0F172A] underline cursor-pointer disabled:opacity-50 flex items-center gap-1"
+              >
+                <span>Enter as Priya</span>
+                <ArrowRightIcon className="w-3 h-3" />
+              </button>
+            </div>
           </div>
 
           {/* Clean Civic Card */}
