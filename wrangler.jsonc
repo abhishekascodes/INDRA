@@ -1,5 +1,5 @@
 {
-  "name": "indra-app",
+  "name": "indra-repo",
   "compatibility_date": "2026-08-28",
   "assets": {
     "directory": "./apps/web/dist",
