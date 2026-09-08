@@ -220,12 +220,15 @@ export function App() {
   // 1. Loading Gateway Splash
   if (authState.isLoading) {
     return (
-      <div className="min-h-screen bg-[#0F172A] flex flex-col items-center justify-center">
-        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center p-2 text-white animate-pulse">
-          <IndraEmblemIcon className="w-8 h-8 text-white" />
+      <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center">
+        <div className="w-12 h-12 rounded-2xl bg-[#0F172A] flex items-center justify-center p-2.5 text-white shadow-sm animate-pulse">
+          <IndraEmblemIcon className="w-7 h-7 text-white" />
         </div>
-        <div className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-400">
+        <div className="mt-4 text-xs font-bold uppercase tracking-widest text-[#0F172A]">
           Verifying Sovereign Citizen Session...
+        </div>
+        <div className="mt-1 text-[11px] text-[#64748B]">
+          Universal Public Operating Layer
         </div>
       </div>
     );
